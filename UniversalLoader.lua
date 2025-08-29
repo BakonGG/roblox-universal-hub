@@ -1,41 +1,57 @@
--- 🌐 Universal Script Loader
--- Criado por BakonGG
+-- UniversalLoader.lua
+local HttpService = game:GetService("HttpService")
+local PlaceId = tostring(game.PlaceId)
 
--- Configurações do repositório
-local repo = "https://raw.githubusercontent.com/BakonGG/roblox-universal-hub/main/games/"
-local fallback = "https://raw.githubusercontent.com/BakonGG/roblox-universal-hub/main/fallback.lua"
+local base = "https://raw.githubusercontent.com/BakonGG/roblox-universal-hub/main/"
+local gamelistUrl = base .. "gamelist.json?nocache=" .. tick()
 
--- Função para carregar script remoto
-local function loadScript(url)
-    local success, result = pcall(function()
-        return game:HttpGet(url)
+-- Função segura para pegar conteúdo
+local function safeGet(url)
+    local ok, result = pcall(function()
+        return game:HttpGet(url, true)
     end)
-
-    if success then
-        local runSuccess, err = pcall(function()
-            loadstring(result)()
-        end)
-        if runSuccess then
-            warn("✅ Script carregado de:", url)
-        else
-            warn("⚠️ Erro ao executar script:", err)
-        end
-        return runSuccess
-    else
-        warn("❌ Falha ao baixar URL:", url)
-        return false
-    end
+    if ok then return result end
+    warn("Erro ao baixar:", url, result)
+    return nil
 end
 
--- Detectar jogo
-local placeId = game.PlaceId
-print("🕹️ PlaceId detectado:", placeId)
+-- Pegar lista de jogos
+local gamelistRaw = safeGet(gamelistUrl)
+local gamelist = {}
+if gamelistRaw then
+    gamelist = HttpService:JSONDecode(gamelistRaw)
+end
 
--- Montar URL do jogo
-local gameUrl = repo .. placeId .. ".lua"
+-- Função para carregar script de um jogo
+local function loadGameScript(pid)
+    local url = base .. "games/" .. pid .. ".lua?nocache=" .. tick()
+    local script = safeGet(url)
+    if script then
+        loadstring(script)()
+        return true
+    end
+    return false
+end
 
--- Tentar carregar script específico
-if not loadScript(gameUrl) then
-    warn("ℹ️ Nenhum script específico encontrado para este jogo. Carregando fallback...")
-    loadScript(fallback)
+-- Primeiro tenta detectar automaticamente
+if gamelist[PlaceId] then
+    print("✅ Detectado jogo:", gamelist[PlaceId])
+    if not loadGameScript(PlaceId) then
+        warn("⚠️ Script não encontrado para:", PlaceId)
+    end
+else
+    -- Se não detectar → abrir Hub inicial
+    local Library = loadstring(game:HttpGet("https://raw.githubusercontent.com/weakhoes/Roblox-UI-Libs/main/shadowlib.lua"))()
+    local Window = Library:CreateWindow("Universal Hub")
+
+    local Tab = Window:CreateTab("Escolha um Jogo")
+
+    for pid, name in pairs(gamelist) do
+        Tab:CreateButton(name, function()
+            Library:Close() -- fecha o menu inicial
+            loadGameScript(pid)
+        end)
+    end
+
+    Tab:CreateLabel("Nenhum jogo detectado automaticamente.")
 end
