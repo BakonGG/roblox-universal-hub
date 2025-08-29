@@ -1,36 +1,41 @@
--- UniversalLoader.lua (versão debug)
-if getgenv().__MY_UNI_HUB_LOADER then return end
-getgenv().__MY_UNI_HUB_LOADER = true
+-- 🌐 Universal Script Loader
+-- Criado por BakonGG
 
-local BASE = "https://raw.githubusercontent.com/BakonGG/roblox-universal-hub/main/"
+-- Configurações do repositório
+local repo = "https://raw.githubusercontent.com/BakonGG/roblox-universal-hub/main/games/"
+local fallback = "https://raw.githubusercontent.com/BakonGG/roblox-universal-hub/main/fallback.lua"
 
-local function try(url)
-    print("🔎 Tentando carregar URL:", url)  -- <<< debug
-
-    local okGet, body = pcall(function()
+-- Função para carregar script remoto
+local function loadScript(url)
+    local success, result = pcall(function()
         return game:HttpGet(url)
     end)
-    if not okGet then
+
+    if success then
+        local runSuccess, err = pcall(function()
+            loadstring(result)()
+        end)
+        if runSuccess then
+            warn("✅ Script carregado de:", url)
+        else
+            warn("⚠️ Erro ao executar script:", err)
+        end
+        return runSuccess
+    else
         warn("❌ Falha ao baixar URL:", url)
         return false
     end
-
-    local okRun, err = pcall(function()
-        loadstring(body)()
-    end)
-    if not okRun then
-        warn("❌ Falha ao executar script:", err)
-        return false
-    end
-    print("✅ Script carregado com sucesso!")
-    return true
 end
 
--- 1) tenta por PlaceId
-if not try(BASE .. "games/" .. game.PlaceId .. ".lua") then
-    -- 2) opcional: tenta por GameId
-    if not try(BASE .. "games/" .. tostring(game.GameId) .. ".lua") then
-        -- 3) fallback
-        try(BASE .. "fallback.lua")
-    end
+-- Detectar jogo
+local placeId = game.PlaceId
+print("🕹️ PlaceId detectado:", placeId)
+
+-- Montar URL do jogo
+local gameUrl = repo .. placeId .. ".lua"
+
+-- Tentar carregar script específico
+if not loadScript(gameUrl) then
+    warn("ℹ️ Nenhum script específico encontrado para este jogo. Carregando fallback...")
+    loadScript(fallback)
 end
