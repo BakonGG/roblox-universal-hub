@@ -30,3 +30,4 @@ if not try(BASE .. "games/" .. game.PlaceId .. ".lua") then
         try(BASE .. "fallback.lua")
     end
 end
+
