@@ -1,17 +1,36 @@
--- fallback.lua
-local msg = ("Este jogo (PlaceId %s) ainda não tem script neste repositório."):format(tostring(game.PlaceId))
-warn(msg)
+local HttpService = game:GetService("HttpService")
+local PlaceId = game.PlaceId
 
--- Se quiser uma janelinha simples usando Shadow Lib:
-local ok, ShadowLib = pcall(function()
-    return loadstring(game:HttpGet(
-        "https://raw.githubusercontent.com/weakhoes/Roblox-UI-Libs/main/Shadow%20Lib.txt"
-    ))()
-end)
+local branches = { "main", "master" }
+local repo = "https://raw.githubusercontent.com/BakonGG/roblox-universal-hub/%s/games/%s.lua"
+local fallback = "https://raw.githubusercontent.com/BakonGG/roblox-universal-hub/%s/fallback.lua"
 
-if ok and ShadowLib then
-    local Window = ShadowLib:Window("Meu Hub (sem suporte)", Color3.fromRGB(128,128,128), Enum.KeyCode.RightControl)
-    local Tab = Window:Tab("Info")
-    -- Algumas libs têm :Label, outras não; usar Button para garantir:
-    Tab:Button("PlaceId: ".. tostring(game.PlaceId), function() setclipboard(tostring(game.PlaceId)) end)
+local function tryLoad(url)
+    local ok, result = pcall(function()
+        return game:HttpGet(url, true)
+    end)
+    if ok then
+        loadstring(result)()
+        print("✅ Script carregado de:", url)
+        return true
+    else
+        warn("⚠️ Falha ao baixar:", url, result)
+        return false
+    end
+end
+
+local loaded = false
+for _, branch in ipairs(branches) do
+    local url = string.format(repo, branch, PlaceId) .. "?nocache=" .. tick()
+    if tryLoad(url) then
+        loaded = true
+        break
+    end
+end
+
+if not loaded then
+    for _, branch in ipairs(branches) do
+        local url = string.format(fallback, branch) .. "?nocache=" .. tick()
+        if tryLoad(url) then break end
+    end
 end
