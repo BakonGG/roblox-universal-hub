@@ -1,3 +1,9 @@
+print("[GAME 18408132742] Script carregado com sucesso!")
+
+-- Teste simples: esperar 5 segundos e printar
+task.delay(5, function()
+    print("[GAME 18408132742] Passaram-se 5 segundos, o script está rodando!")
+end)
 -- Serviços
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local Events = ReplicatedStorage:WaitForChild("Events")
