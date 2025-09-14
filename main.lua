@@ -23,7 +23,7 @@ end
 log("[INFO] Jogo detectado! GameId:", tostring(gameId))
 
 -- CONFIG: altere para seu repositório raw no GitHub (pasta 'games/')
-local BASE_RAW_URL = "https://github.com/BakonGG/roblox-universal-hub/blob/main/main.lua"
+local BASE_RAW_URL = "https://raw.githubusercontent.com/BakonGG/roblox-universal-hub/main/games/"
 
 -- URLs
 local scriptURL = BASE_RAW_URL .. tostring(gameId) .. ".lua"
