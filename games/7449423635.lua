@@ -21,7 +21,7 @@ getgenv().Setting = {
         "Yeti-Yeti",
         "T-Rex-T-Rex"
     },
-    ["IdleCheck"] = 300, -- every (x) seconds if not moving rejoin
+    ["IdleCheck"] = 30, -- every (x) seconds if not moving rejoin
 };
 
 loadstring(game:HttpGet("https://raw.githubusercontent.com/xQuartyx/QuartyzScript/main/Loader.lua"))()
