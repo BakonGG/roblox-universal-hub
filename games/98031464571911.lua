@@ -1,7 +1,7 @@
 -- // GUI principal
 local ScreenGui = Instance.new("ScreenGui", game.CoreGui)
 local Frame = Instance.new("Frame", ScreenGui)
-Frame.Size = UDim2.new(0, 260, 0, 280)
+Frame.Size = UDim2.new(0, 260, 0, 40) -- começa minimizado
 Frame.Position = UDim2.new(0.8, 0, 0.4, 0)
 Frame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 Frame.BorderSizePixel = 0
@@ -23,7 +23,7 @@ Title.TextXAlignment = Enum.TextXAlignment.Left
 local Close = Instance.new("TextButton", Frame)
 Close.Size = UDim2.new(0, 25, 0, 25)
 Close.Position = UDim2.new(1, -30, 0, 5)
-Close.Text = "➖"
+Close.Text = "➕" -- começa minimizado
 Close.TextColor3 = Color3.fromRGB(255, 255, 100)
 Close.BackgroundTransparency = 1
 Close.Font = Enum.Font.SourceSansBold
@@ -50,6 +50,7 @@ local function criarBotao(nome, cor)
 	botao.Font = Enum.Font.SourceSansBold
 	botao.TextSize = 18
 	Instance.new("UICorner", botao).CornerRadius = UDim.new(0, 8)
+	botao.Visible = false -- começa minimizado
 	return botao
 end
 
@@ -60,11 +61,8 @@ local rebirthBtn = criarBotao("Auto Rebirth")
 local kaitunBtn = criarBotao("Kaitun", Color3.fromRGB(70, 50, 120))
 
 -- // Estados
-local clickAtivo = false
-local buyAtivo = false
-local rebirthAtivo = false
-local kaitunAtivo = false
-local minimized = false
+local clickAtivo, buyAtivo, rebirthAtivo, kaitunAtivo = false, false, false, true -- Kaitun já começa ligado
+local minimized = true
 
 -- // Serviços Roblox
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
@@ -126,35 +124,54 @@ Close.MouseButton1Click:Connect(function()
 	end
 end)
 
--- // AutoClick
+-- // Auto Click (parada instantânea)
 task.spawn(function()
 	while task.wait() do
 		if clickAtivo or kaitunAtivo then
 			pcall(function() ClickEvent:FireServer() end)
+		else
+			task.wait(0.05)
 		end
 	end
 end)
 
--- // AutoBuy
+-- // Auto Buy
 task.spawn(function()
 	while task.wait() do
 		if buyAtivo or kaitunAtivo then
 			for _, v in ipairs(upgrades) do
+				if not (buyAtivo or kaitunAtivo) then break end
 				pcall(function()
 					local args = { buffer.fromstring(v) }
 					RemoteEvent:FireServer(unpack(args))
 				end)
 			end
+		else
+			task.wait(0.05)
 		end
 	end
 end)
 
--- // AutoRebirth
+-- // Auto Rebirth
 task.spawn(function()
 	while task.wait() do
 		if rebirthAtivo or kaitunAtivo then
 			pcall(function()
 				local args = { buffer.fromstring("\002\005Level") }
+				RemoteEvent:FireServer(unpack(args))
+			end)
+		else
+			task.wait(0.05)
+		end
+	end
+end)
+
+-- // Boss Bandit automático (a cada 60s)
+task.spawn(function()
+	while task.wait(60) do
+		if kaitunAtivo then
+			pcall(function()
+				local args = { buffer.fromstring("\004\vBoss Bandit") }
 				RemoteEvent:FireServer(unpack(args))
 			end)
 		end
@@ -180,9 +197,15 @@ kaitunBtn.MouseButton1Click:Connect(function()
 	kaitunAtivo = not kaitunAtivo
 	kaitunBtn.Text = "Kaitun: " .. (kaitunAtivo and "ON" or "OFF")
 	kaitunBtn.BackgroundColor3 = kaitunAtivo and Color3.fromRGB(140, 70, 255) or Color3.fromRGB(70, 50, 120)
-
 	showNotification(
 		(kaitunAtivo and "💜 Kaitun ativado! Fazendo tudo sozinho!" or "💤 Kaitun desativado."),
 		kaitunAtivo and Color3.fromRGB(140, 70, 255) or Color3.fromRGB(100, 100, 100)
 	)
+end)
+
+-- // Inicia Kaitun automaticamente
+task.spawn(function()
+	kaitunBtn.Text = "Kaitun: ON"
+	kaitunBtn.BackgroundColor3 = Color3.fromRGB(140, 70, 255)
+	showNotification("💜 Kaitun iniciado automaticamente!", Color3.fromRGB(140, 70, 255))
 end)
