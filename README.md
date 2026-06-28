@@ -1,3 +1,3 @@
 ```lua
-loadstring(game:HttpGet("https://github.com/BakonGG/roblox-universal-hub/blob/main/main.lua"))()
+loadstring(game:HttpGet("https://raw.githubusercontent.com/BakonGG/roblox-universal-hub/main/main.lua"))()
 ```
