@@ -1,0 +1,6 @@
+{
+  "name": "roblox-universal-hub",
+  "scripts": {
+    "github": "git add . && git commit -m \"Update scripts\" && git push"
+  }
+}
