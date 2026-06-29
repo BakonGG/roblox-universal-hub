@@ -1,0 +1,27 @@
+-- https://lua.expert/
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Rodux = require(ReplicatedStorage.Rodux)
+local Knit = require(ReplicatedStorage.Knit)
+
+return Rodux.createReducer({
+	SubMenuOpen = false,
+	Golds = 0,
+	Tutorial = nil,
+	HasVip = Knit.GetService("PlayerManagerService"):CheckVIP(),
+	HasSpeed = Knit.GetService("PlayerManagerService"):CheckSpeed(),
+	HasBigBrush = Knit.GetService("PlayerManagerService"):CheckBigBrush()
+}, {
+	MainMenu = function(p1, p2) --[[ MainMenu | Line: 16 ]]
+		local t = {}
+
+		for k, v in pairs(p1) do
+			t[k] = v
+		end
+
+		for k, v in pairs(p2.payload) do
+			t[k] = v
+		end
+
+		return t
+	end
+})

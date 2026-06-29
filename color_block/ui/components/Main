@@ -1,0 +1,46 @@
+-- https://lua.expert/
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Knit = require(ReplicatedStorage.Knit)
+local Roact = require(ReplicatedStorage.Roact)
+local PlayerGui = Knit.Player.PlayerGui
+
+game:GetService("StarterGui")
+
+local DrawSelector = require(script.Parent.DrawSelector)
+local HelpFriends = require(script.Parent.HelpFriends)
+local Shop = require(script.Parent.Shop)
+local GroupOverlay = require(script.Parent.GroupOverlay)
+local Golds = require(script.Parent.Golds)
+local EasyModeModal = require(script.Parent.EasyModeModal)
+local SpeedBadgeModal = require(script.Parent.SpeedBadgeModal)
+local CompletedRewardModal = require(script.Parent.CompletedRewardModal)
+local GroupRequestModal = require(script.Parent.GroupRequestModal)
+local CompleteColorMessage = require(script.Parent.CompleteColorMessage)
+local v1 = Roact.Component:extend("Main")
+
+function v1.init(p1) --[[ init | Line: 20 ]] end
+function v1.render(p1) --[[ render | Line: 23 | Upvalues: Roact (copy), DrawSelector (copy), HelpFriends (copy), Shop (copy), GroupOverlay (copy), Golds (copy), EasyModeModal (copy), SpeedBadgeModal (copy), CompletedRewardModal (copy), GroupRequestModal (copy), CompleteColorMessage (copy) ]]
+	return Roact.createElement("ScreenGui", {
+		IgnoreGuiInset = true
+	}, {
+		Frame = Roact.createElement("Frame", {
+			Transparency = 1,
+			AnchorPoint = Vector2.new(0.5, 0.5),
+			Position = UDim2.new(0.5, 0, 0.5, 0),
+			Size = UDim2.new(1, 0, 1, 0)
+		}, {
+			DrawSelector = Roact.createElement(DrawSelector),
+			HelpFriends = Roact.createElement(HelpFriends),
+			Shop = Roact.createElement(Shop),
+			GroupOverlay = Roact.createElement(GroupOverlay),
+			Golds = Roact.createElement(Golds),
+			EasyModeModal = Roact.createElement(EasyModeModal),
+			SpeedBadgeModal = Roact.createElement(SpeedBadgeModal),
+			CompletedRewardModal = Roact.createElement(CompletedRewardModal),
+			GroupRequestModal = Roact.createElement(GroupRequestModal),
+			CompleteColorMessage = Roact.createElement(CompleteColorMessage)
+		})
+	})
+end
+
+return v1

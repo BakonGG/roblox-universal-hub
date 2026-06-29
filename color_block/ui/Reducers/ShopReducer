@@ -1,0 +1,24 @@
+-- https://lua.expert/
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Rodux = require(ReplicatedStorage.Rodux)
+local Knit = require(ReplicatedStorage.Knit)
+
+return Rodux.createReducer({
+	selectorOpen = false,
+	selectedCategory = "Brush",
+	unlockedShopByCategory = Knit.GetService("PlayerManagerService"):GetUnlockedShop("Brush")
+}, {
+	Shop = function(p1, p2) --[[ Shop | Line: 12 ]]
+		local t = {}
+
+		for k, v in pairs(p1) do
+			t[k] = v
+		end
+
+		for k, v in pairs(p2.payload) do
+			t[k] = v
+		end
+
+		return t
+	end
+})

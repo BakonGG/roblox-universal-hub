@@ -1,0 +1,179 @@
+-- https://lua.expert/
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Knit = require(ReplicatedStorage.Knit)
+local Roact = require(ReplicatedStorage.Roact)
+local RoactRodux = require(ReplicatedStorage.RoactRodux)
+
+require(ReplicatedStorage.SetTimeout)
+
+local Constants = require(ReplicatedStorage.Constants)
+
+game:GetService("MarketplaceService")
+
+local ButtonGreen = require(script.Parent.UIComponents.ButtonGreen)
+local ButtonRed = require(script.Parent.UIComponents.ButtonRed)
+
+require(script.Parent.UIComponents.ButtonBlack)
+
+local UpdateSelectedCategoryAction = require(script.Parent.Parent.Actions.ShopAction).UpdateSelectedCategoryAction
+local UpdateUnlockedShopByCategory = require(script.Parent.Parent.Actions.ShopAction).UpdateUnlockedShopByCategory
+local v1 = Roact.Component:extend("ShopButtons")
+
+function v1.init(p1) --[[ init | Line: 20 | Upvalues: Constants (copy) ]]
+	p1.dispatch = p1.props.dispatch
+	p1:setState({
+		selected = 1,
+		categories = Constants.SHOP_BUTTONS
+	})
+end
+function v1.didMount(p1) --[[ didMount | Line: 29 ]] end
+function v1.render(p1) --[[ render | Line: 33 | Upvalues: Roact (copy), ButtonRed (copy), ButtonGreen (copy), Knit (copy), UpdateUnlockedShopByCategory (copy), UpdateSelectedCategoryAction (copy), Constants (copy) ]]
+	local t = {
+		UIListLayout = Roact.createElement("UIListLayout", {
+			FillDirection = Enum.FillDirection.Vertical,
+			SortOrder = Enum.SortOrder.Name,
+			HorizontalAlignment = Enum.HorizontalAlignment.Center
+		})
+	}
+	local count = 0
+
+	for i, v in ipairs(p1.state.categories[p1.state.selected]) do
+		count = count + 1
+
+		local v2 = Roact.createElement(v == p1.props.selectedCategory and ButtonRed or ButtonGreen, {
+			Size = UDim2.new(0.95, 0, 0.98, 0),
+			Position = UDim2.new(0.5, 0, 0.5, 0),
+			AnchorPoint = Vector2.new(0.5, 0.5),
+			AspectRatio = 3.275,
+			Text = v,
+			Font = Enum.Font.Cartoon,
+			[Roact.Event.Activated] = function() --[[ Line: 54 | Upvalues: Knit (ref), v (copy), p1 (copy), UpdateUnlockedShopByCategory (ref), UpdateSelectedCategoryAction (ref) ]]
+				p1:dispatch(UpdateUnlockedShopByCategory((Knit.GetService("PlayerManagerService"):GetUnlockedShop(v))))
+				p1:dispatch(UpdateSelectedCategoryAction(v))
+			end
+		}, {})
+
+		t[i .. "_" .. v] = Roact.createElement("Frame", {
+			BackgroundTransparency = 1,
+			Size = UDim2.new(1, 0, 0.1428, 0)
+		}, {
+			CategoryButton = v2
+		})
+	end
+
+	for i = 1, 6 - count do
+		t["Empty_" .. i] = Roact.createElement("Frame", {
+			BackgroundTransparency = 1,
+			Size = UDim2.new(1, 0, 0.1428, 0)
+		}, {})
+	end
+
+	if #p1.state.categories > 1 then
+		t.Selezione = Roact.createElement("Frame", {
+			BackgroundTransparency = 1,
+			Size = UDim2.new(1, 0, 0.1428, 0),
+			BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+		}, {
+			Roact.createElement("UICorner", {}, {}),
+			Left = Roact.createElement(ButtonGreen, {
+				AnchorPoint = Vector2.new(0, 0.5),
+				Size = UDim2.new(0.3, 0, 0.9, 0),
+				Position = UDim2.new(0.05, 0, 0.5, 0),
+				AspectRatio = 1,
+				Image = Constants.Icon_Arrow_Left,
+				[Roact.Event.Activated] = function() --[[ Line: 93 | Upvalues: p1 (copy), UpdateSelectedCategoryAction (ref) ]]
+					local selected = p1.state.selected
+					local v1 = p1.state.selected - 1
+
+					if selected == math.max(1, v1) then
+						return
+					end
+
+					p1:setState(function(p12) --[[ Line: 95 | Upvalues: p1 (ref) ]]
+						local t = {}
+
+						t.selected = math.max(1, p1.state.selected - 1)
+
+						return t
+					end)
+
+					local v2 = p1
+					local categories = p1.state.categories
+					local v4 = p1.state.selected - 1
+
+					v2:dispatch(UpdateSelectedCategoryAction(categories[math.max(1, v4)][1]))
+				end
+			}, {}),
+			Mid = Roact.createElement("TextLabel", {
+				BackgroundTransparency = 1,
+				TextScaled = true,
+				TextStrokeTransparency = 1,
+				AnchorPoint = Vector2.new(0.5, 0.5),
+				Size = UDim2.new(0.25, 0, 0.9, 0),
+				Position = UDim2.new(0.5, 0, 0.5, 0),
+				Font = Enum.Font.Cartoon,
+				TextColor3 = Color3.fromRGB(255, 255, 255),
+				TextTruncate = Enum.TextTruncate.AtEnd,
+				Text = p1.state.selected .. "/" .. #p1.state.categories
+			}, {}),
+			Right = Roact.createElement(ButtonGreen, {
+				AnchorPoint = Vector2.new(1, 0.5),
+				Size = UDim2.new(0.3, 0, 0.9, 0),
+				Position = UDim2.new(0.95, 0, 0.5, 0),
+				AspectRatio = 1,
+				Image = Constants.Icon_Arrow_Right,
+				[Roact.Event.Activated] = function() --[[ Line: 125 | Upvalues: p1 (copy), UpdateSelectedCategoryAction (ref) ]]
+					local selected = p1.state.selected
+					local v1 = #p1.state.categories
+					local v2 = p1.state.selected + 1
+
+					if selected == math.min(v1, v2) then
+						return
+					end
+
+					p1:setState(function(p12) --[[ Line: 127 | Upvalues: p1 (ref) ]]
+						local t = {}
+
+						t.selected = math.min(#p1.state.categories, p1.state.selected + 1)
+
+						return t
+					end)
+
+					local v3 = p1
+					local categories = p1.state.categories
+					local v5 = #p1.state.categories
+					local v6 = p1.state.selected + 1
+
+					v3:dispatch(UpdateSelectedCategoryAction(categories[math.min(v5, v6)][1]))
+				end
+			}, {})
+		})
+	else
+		t.Empty = Roact.createElement("Frame", {
+			BackgroundTransparency = 1,
+			Size = UDim2.new(1, 0, 0.1428, 0)
+		}, {})
+	end
+
+	t.UICorner = Roact.createElement("UICorner", {}, {})
+
+	return Roact.createElement("Frame", {
+		BackgroundTransparency = 1,
+		BorderSizePixel = 0,
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Size = UDim2.new(1, 0, 0.9, 0),
+		Position = p1.props.Position
+	}, t)
+end
+
+return RoactRodux.connect(function(p1, p2) --[[ Line: 156 ]]
+	return {
+		selectedCategory = p1.Shop.selectedCategory
+	}
+end, function(p1) --[[ Line: 161 ]]
+	return {
+		dispatch = function(p12, p2) --[[ dispatch | Line: 163 | Upvalues: p1 (copy) ]]
+			p1(p2)
+		end
+	}
+end)(v1)

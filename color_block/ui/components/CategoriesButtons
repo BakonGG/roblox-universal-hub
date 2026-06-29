@@ -1,0 +1,174 @@
+-- https://lua.expert/
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Knit = require(ReplicatedStorage.Knit)
+local Roact = require(ReplicatedStorage.Roact)
+local RoactRodux = require(ReplicatedStorage.RoactRodux)
+
+require(ReplicatedStorage.SetTimeout)
+
+local Constants = require(ReplicatedStorage.Constants)
+local MarketplaceService = game:GetService("MarketplaceService")
+local ButtonGreen = require(script.Parent.UIComponents.ButtonGreen)
+local ButtonRed = require(script.Parent.UIComponents.ButtonRed)
+local ButtonBlack = require(script.Parent.UIComponents.ButtonBlack)
+local UpdateSelectedCategoryAction = require(script.Parent.Parent.Actions.DrawSelectorAction).UpdateSelectedCategoryAction
+local UpdateSelectedPage = require(script.Parent.Parent.Actions.DrawSelectorAction).UpdateSelectedPage
+local UpdateUnlockedPixelsByCategory = require(script.Parent.Parent.Actions.DrawSelectorAction).UpdateUnlockedPixelsByCategory
+local v1 = Roact.Component:extend("CategoriesButtons")
+
+function v1.init(p1) --[[ init | Line: 20 | Upvalues: Constants (copy) ]]
+	p1.dispatch = p1.props.dispatch
+	p1:setState({
+		categories = Constants.CATEGORIES_BUTTONS
+	})
+end
+function v1.didMount(p1) --[[ didMount | Line: 29 ]] end
+function v1.render(p1) --[[ render | Line: 33 | Upvalues: Roact (copy), ButtonRed (copy), ButtonGreen (copy), Knit (copy), UpdateUnlockedPixelsByCategory (copy), UpdateSelectedCategoryAction (copy), Constants (copy), ButtonBlack (copy), MarketplaceService (copy), UpdateSelectedPage (copy) ]]
+	local t = {
+		UIListLayout = Roact.createElement("UIListLayout", {
+			FillDirection = Enum.FillDirection.Vertical,
+			SortOrder = Enum.SortOrder.Name,
+			HorizontalAlignment = Enum.HorizontalAlignment.Center
+		})
+	}
+	local count = 0
+
+	for i, v in ipairs(p1.state.categories[p1.props.selectedPage]) do
+		count = count + 1
+
+		local v1 = nil
+		local v3 = Roact.createElement(v == p1.props.selectedCategory and ButtonRed or ButtonGreen, {
+			Size = UDim2.new(0.95, 0, 0.98, 0),
+			Position = UDim2.new(0.5, 0, 0.5, 0),
+			AnchorPoint = Vector2.new(0.5, 0.5),
+			AspectRatio = 3.275,
+			Text = v,
+			Font = Enum.Font.Cartoon,
+			[Roact.Event.Activated] = function() --[[ Line: 54 | Upvalues: Knit (ref), v (copy), p1 (copy), UpdateUnlockedPixelsByCategory (ref), UpdateSelectedCategoryAction (ref) ]]
+				p1:dispatch(UpdateUnlockedPixelsByCategory((Knit.GetService("PlayerManagerService"):GetUnlockedPixels(v))))
+				p1:dispatch(UpdateSelectedCategoryAction(v))
+			end
+		}, {})
+
+		if v == Constants.VIP then
+			if p1.props.HasVip ~= "unset" then
+				v1 = if p1.props.HasVip or v ~= Constants.VIP then v3 else Roact.createElement(ButtonBlack, {
+	Size = UDim2.new(0.95, 0, 0.98, 0),
+	Position = UDim2.new(0.5, 0, 0.5, 0),
+	AnchorPoint = Vector2.new(0.5, 0.5),
+	AspectRatio = 3.275,
+	Text = v,
+	Font = Enum.Font.Cartoon,
+	[Roact.Event.Activated] = function() --[[ Line: 74 | Upvalues: MarketplaceService (ref), Knit (ref), Constants (ref) ]]
+		MarketplaceService:PromptGamePassPurchase(Knit.Player, Constants.VIP_PASSID)
+	end
+}, {})
+			end
+		else
+			v1 = v3
+		end
+
+		t[i .. "_" .. v] = Roact.createElement("Frame", {
+			BackgroundTransparency = 1,
+			Size = UDim2.new(1, 0, 0.1428, 0)
+		}, {
+			CategoryButton = v1
+		})
+	end
+
+	for i = 1, 6 - count do
+		t["Empty_" .. i] = Roact.createElement("Frame", {
+			BackgroundTransparency = 1,
+			Size = UDim2.new(1, 0, 0.1428, 0)
+		}, {})
+	end
+
+	if #p1.state.categories > 1 then
+		t.Selezione = Roact.createElement("Frame", {
+			BackgroundTransparency = 1,
+			Size = UDim2.new(1, 0, 0.1428, 0),
+			BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+		}, {
+			Roact.createElement("UICorner", {}, {}),
+			Left = Roact.createElement(ButtonGreen, {
+				AnchorPoint = Vector2.new(0, 0.5),
+				Size = UDim2.new(0.3, 0, 0.9, 0),
+				Position = UDim2.new(0.05, 0, 0.5, 0),
+				AspectRatio = 1,
+				Image = Constants.Icon_Arrow_Left,
+				[Roact.Event.Activated] = function() --[[ Line: 118 | Upvalues: p1 (copy), UpdateSelectedPage (ref), UpdateSelectedCategoryAction (ref), Knit (ref), UpdateUnlockedPixelsByCategory (ref) ]]
+					if p1.props.selectedPage == math.max(1, p1.props.selectedPage - 1) then
+						return
+					end
+
+					p1:dispatch(UpdateSelectedPage((math.max(1, p1.props.selectedPage - 1))))
+					p1:dispatch(UpdateSelectedCategoryAction(p1.state.categories[math.max(1, p1.props.selectedPage - 1)][1]))
+
+					local PlayerManagerService = Knit.GetService("PlayerManagerService")
+
+					p1:dispatch(UpdateUnlockedPixelsByCategory((PlayerManagerService:GetUnlockedPixels(p1.state.categories[math.max(1, p1.props.selectedPage - 1)][1]))))
+				end
+			}, {}),
+			Mid = Roact.createElement("TextLabel", {
+				BackgroundTransparency = 1,
+				TextScaled = true,
+				TextStrokeTransparency = 1,
+				AnchorPoint = Vector2.new(0.5, 0.5),
+				Size = UDim2.new(0.25, 0, 0.9, 0),
+				Position = UDim2.new(0.5, 0, 0.5, 0),
+				Font = Enum.Font.Cartoon,
+				TextColor3 = Color3.fromRGB(255, 255, 255),
+				TextTruncate = Enum.TextTruncate.AtEnd,
+				Text = p1.props.selectedPage .. "/" .. #p1.state.categories
+			}, {}),
+			Right = Roact.createElement(ButtonGreen, {
+				AnchorPoint = Vector2.new(1, 0.5),
+				Size = UDim2.new(0.3, 0, 0.9, 0),
+				Position = UDim2.new(0.95, 0, 0.5, 0),
+				AspectRatio = 1,
+				Image = Constants.Icon_Arrow_Right,
+				[Roact.Event.Activated] = function() --[[ Line: 150 | Upvalues: p1 (copy), UpdateSelectedPage (ref), UpdateSelectedCategoryAction (ref), Knit (ref), UpdateUnlockedPixelsByCategory (ref) ]]
+					if p1.props.selectedPage == math.min(#p1.state.categories, p1.props.selectedPage + 1) then
+						return
+					end
+
+					p1:dispatch(UpdateSelectedPage((math.min(#p1.state.categories, p1.props.selectedPage + 1))))
+					p1:dispatch(UpdateSelectedCategoryAction(p1.state.categories[math.min(#p1.state.categories, p1.props.selectedPage + 1)][1]))
+
+					local PlayerManagerService = Knit.GetService("PlayerManagerService")
+
+					p1:dispatch(UpdateUnlockedPixelsByCategory((PlayerManagerService:GetUnlockedPixels(p1.state.categories[math.min(#p1.state.categories, p1.props.selectedPage + 1)][1]))))
+				end
+			}, {})
+		})
+	else
+		t.Empty = Roact.createElement("Frame", {
+			BackgroundTransparency = 1,
+			Size = UDim2.new(1, 0, 0.1428, 0)
+		}, {})
+	end
+
+	t.UICorner = Roact.createElement("UICorner", {}, {})
+
+	return Roact.createElement("Frame", {
+		BackgroundTransparency = 1,
+		BorderSizePixel = 0,
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Size = UDim2.new(1, 0, 0.9, 0),
+		Position = p1.props.Position
+	}, t)
+end
+
+return RoactRodux.connect(function(p1, p2) --[[ Line: 180 ]]
+	return {
+		selectedCategory = p1.DrawSelector.selectedCategory,
+		selectedPage = p1.DrawSelector.selectedPage,
+		HasVip = p1.MainMenu.HasVip
+	}
+end, function(p1) --[[ Line: 187 ]]
+	return {
+		dispatch = function(p12, p2) --[[ dispatch | Line: 189 | Upvalues: p1 (copy) ]]
+			p1(p2)
+		end
+	}
+end)(v1)

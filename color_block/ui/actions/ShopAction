@@ -1,0 +1,31 @@
+-- https://lua.expert/
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+
+require(ReplicatedStorage.Knit)
+
+return {
+	UpdateSelectorOpenAction = function(p1) --[[ Line: 6 ]]
+		return {
+			type = "Shop",
+			payload = {
+				selectorOpen = p1
+			}
+		}
+	end,
+	UpdateSelectedCategoryAction = function(p1) --[[ Line: 15 ]]
+		return {
+			type = "Shop",
+			payload = {
+				selectedCategory = p1
+			}
+		}
+	end,
+	UpdateUnlockedShopByCategory = function(p1) --[[ Line: 25 ]]
+		return {
+			type = "Shop",
+			payload = {
+				unlockedShopByCategory = p1
+			}
+		}
+	end
+}

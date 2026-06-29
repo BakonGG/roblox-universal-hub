@@ -1,0 +1,610 @@
+-- https://lua.expert/
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Knit = require(ReplicatedStorage.Knit)
+
+require(Knit.Util.TableUtil)
+
+local Roact = require(ReplicatedStorage.Roact)
+local RoactRodux = require(ReplicatedStorage.RoactRodux)
+local RBXWait = require(ReplicatedStorage.RBXWait)
+
+require(Knit.Util.Promise)
+
+local Constants = require(ReplicatedStorage.Constants)
+
+require(ReplicatedStorage.SetTimeout)
+
+local UpdateUnlockedPixelsByCategory = require(script.Parent.Parent.Actions.DrawSelectorAction).UpdateUnlockedPixelsByCategory
+local UpdatePixelPalette = require(script.Parent.Parent.Actions.DrawSelectorAction).UpdatePixelPalette
+local UpdateSubMenuOpen = require(script.Parent.Parent.Actions.MainMenuAction).UpdateSubMenuOpen
+local UpdateSelectorOpenAction = require(script.Parent.Parent.Actions.DrawSelectorAction).UpdateSelectorOpenAction
+local UpdatePixelOnWorkspaceAction = require(script.Parent.Parent.Actions.DrawSelectorAction).UpdatePixelOnWorkspaceAction
+local UpdateCurrentPixel = require(script.Parent.Parent.Actions.DrawSelectorAction).UpdateCurrentPixel
+local UpdateTutorial = require(script.Parent.Parent.Actions.MainMenuAction).UpdateTutorial
+local V2FrameUI = require(script.Parent.UIComponents.V2FrameUI)
+local ButtonRed = require(script.Parent.UIComponents.ButtonRed)
+local ButtonGreen = require(script.Parent.UIComponents.ButtonGreen)
+local ButtonBlue = require(script.Parent.UIComponents.ButtonBlue)
+local TemporizedMessage = require(script.Parent.UIComponents.TemporizedMessage)
+
+require(script.Parent.UIComponents.ButtonGray)
+
+local CardRed = require(script.Parent.UIComponents.CardRed)
+
+require(script.Parent.UIComponents.CardOrange)
+
+local CardGreen = require(script.Parent.UIComponents.CardGreen)
+local CardBlue = require(script.Parent.UIComponents.CardBlue)
+local ShrinkTextButton = require(script.Parent.UIComponents.ShrinkTextButton)
+local v1 = Roact.Component:extend("Categories")
+
+function v1.init(p1) --[[ init | Line: 38 | Upvalues: Constants (copy), Roact (copy) ]]
+	p1.dispatch = p1.props.dispatch
+	p1:setState({
+		debounce = false,
+		modalOpen = false,
+		pixel = nil,
+		rbx = nil,
+		loaded = 16,
+		lastScroll = 0,
+		scrollFail = false,
+		notEnoughtMoney = false,
+		swiped = false,
+		mousedown = false,
+		categories = Constants.CATEGORIES_PIXEL,
+		notEnoughtMoneyTime = DateTime.now().UnixTimestampMillis
+	})
+	p1.ScrollingFrameRef = Roact.createRef()
+	p1.Connections = {}
+end
+function v1.willUnmount(p1) --[[ willUnmount | Line: 59 ]]
+	pcall(function() --[[ Line: 60 | Upvalues: p1 (copy) ]]
+		for i, v in ipairs(p1.Connections) do
+			pcall(function() --[[ Line: 62 | Upvalues: v (copy) ]]
+				v:Disconnect()
+			end)
+		end
+	end)
+end
+function v1.didMount(p1) --[[ didMount | Line: 67 | Upvalues: Knit (copy), UpdateUnlockedPixelsByCategory (copy) ]]
+	task.spawn(function() --[[ Line: 68 | Upvalues: Knit (ref), p1 (copy), UpdateUnlockedPixelsByCategory (ref) ]]
+		p1:dispatch(UpdateUnlockedPixelsByCategory((Knit.GetService("PlayerManagerService"):GetUnlockedPixels(p1.props.selectedCategory))))
+	end)
+	task.spawn(function() --[[ Line: 73 | Upvalues: p1 (copy) ]]
+		local v1 = p1.ScrollingFrameRef:getValue()
+
+		if v1 then
+			local v2 = v1:GetPropertyChangedSignal("CanvasPosition"):Connect(function() --[[ Line: 76 | Upvalues: p1 (ref), v1 (copy) ]]
+				if p1.props.isTouch then
+					p1:setState({
+						swiped = true,
+						mousedown = true
+					})
+				end
+
+				if not (v1.CanvasPosition.Y >= p1.state.lastScroll + (v1.CanvasSize.Height.Offset / (#p1.state.categories[p1.props.selectedCategory] / 4) - 20)) then
+					return
+				end
+
+				lastScroll = v1.CanvasPosition.Y
+				p1:setState({
+					loaded = math.min(p1.state.loaded + 8, #p1.state.categories[p1.props.selectedCategory]),
+					lastScroll = v1.CanvasPosition.Y
+				})
+			end)
+			local Connections = p1.Connections
+
+			table.insert(Connections, v2)
+		else
+			p1:setState({
+				scrollFail = true
+			})
+		end
+	end)
+end
+function v1.willUpdate(p1, p2, p3) --[[ willUpdate | Line: 105 ]] end
+function v1.didUpdate(p1, p2, p3) --[[ didUpdate | Line: 109 ]]
+	if p2.selectedCategory == p1.props.selectedCategory then
+		return
+	end
+
+	task.spawn(function() --[[ Line: 111 | Upvalues: p1 (copy) ]]
+		p1:setState({
+			modalOpen = false,
+			pixel = nil,
+			loaded = 16,
+			lastScroll = 0
+		})
+
+		if not p1.state.rbx then
+			return
+		end
+
+		local AbsoluteSize = p1.state.rbx.AbsoluteSize
+
+		p1.state.rbx.Parent.Parent.CanvasSize = UDim2.new(0, AbsoluteSize.X, 0, AbsoluteSize.Y * math.ceil(#p1.state.categories[p1.props.selectedCategory] / 4))
+		p1.state.rbx.Parent.Parent.CanvasPosition = Vector2.new(0, 0)
+	end)
+end
+function v1.render(p1) --[[ render | Line: 128 | Upvalues: Constants (copy), CardRed (copy), Roact (copy), ButtonGreen (copy), Knit (copy), UpdateTutorial (copy), UpdateUnlockedPixelsByCategory (copy), RBXWait (copy), ButtonRed (copy), CardBlue (copy), UpdateCurrentPixel (copy), UpdatePixelOnWorkspaceAction (copy), UpdateSelectorOpenAction (copy), UpdateSubMenuOpen (copy), UpdatePixelPalette (copy), ButtonBlue (copy), V2FrameUI (copy), ShrinkTextButton (copy), CardGreen (copy), TemporizedMessage (copy) ]]
+	local t = {}
+
+	if p1.state.modalOpen and p1.state.pixel then
+		local v1 = p1.props.unlockedPixelsByCategory[p1.state.pixel.Name] and true or false
+		local v3, v4, v5, v6, v7, v8, v9, v10
+
+		if v1 then
+			v3 = Color3.fromRGB(109, 172, 243)
+
+			local v11 = Color3.fromRGB(34, 77, 219)
+
+			v4 = Constants.Icon_Palette
+			v5 = CardBlue
+
+			local v12 = UDim2.new(0.5, 0, 0, 0)
+			local v13 = Roact.createElement("Frame", {
+				AnchorPoint = Vector2.new(0.5, 1),
+				Position = UDim2.new(0.5, 0, 1, 0),
+				Size = UDim2.new(1, 0, 0.45, 0)
+			}, {
+				AcceptButton = Roact.createElement(ButtonGreen, {
+					AnchorPoint = Vector2.new(0.5, 0),
+					Size = UDim2.new(1, 0, 0.5, 0),
+					Position = UDim2.new(0.5, 0, 0.04, 0),
+					AspectRatio = 3,
+					RelativeZIndex = Constants.MODAL_RELATIVE_INDEX,
+					Font = Enum.Font.Cartoon,
+					Text = "Build",
+					[Roact.Event.Activated] = function() --[[ Line: 245 | Upvalues: p1 (copy), Knit (ref), UpdateTutorial (ref), UpdateCurrentPixel (ref), UpdatePixelOnWorkspaceAction (ref), UpdateSelectorOpenAction (ref), UpdateSubMenuOpen (ref), UpdatePixelPalette (ref) ]]
+						if p1.state.debounce ~= false then
+							return
+						end
+
+						p1:setState({
+							debounce = true
+						})
+						pcall(function() --[[ Line: 253 | Upvalues: Knit (ref) ]]
+							local Blocks = workspace:FindFirstChild("Map"):FindFirstChild("Blocks")
+
+							for i, v in ipairs(Blocks:GetChildren()) do
+								local v1 = false
+
+								for i2, v2 in ipairs(v:GetChildren()) do
+									if v2:IsA("SpawnLocation") and v2:GetAttribute("PlayerId") == Knit.LocalPlayer.UserId then
+										local Draw = v:FindFirstChild("Draw")
+
+										if Draw then
+											for i3, v3 in ipairs(Draw:GetChildren()) do
+												if v3.Name == "GivePaletteWall" then
+													pcall(function() --[[ Line: 266 | Upvalues: v3 (copy) ]]
+														v3.Parent = nil
+														v3:Destroy()
+													end)
+												end
+											end
+
+											v1 = true
+
+											break
+										end
+									end
+								end
+
+								if v1 then
+									break
+								end
+							end
+						end)
+						task.spawn(function() --[[ Line: 285 | Upvalues: Knit (ref), p1 (ref) ]]
+							Knit.GetService("PixelGeneratorService"):GeneratePixel(p1.state.category, p1.state.pixel.Name)
+						end)
+						task.wait(0.2)
+
+						local ok, result = pcall(function() --[[ Line: 291 | Upvalues: p1 (ref), UpdateTutorial (ref), Knit (ref), UpdateCurrentPixel (ref), UpdatePixelOnWorkspaceAction (ref), UpdateSelectorOpenAction (ref), UpdateSubMenuOpen (ref), UpdatePixelPalette (ref) ]]
+							if p1.state.pixel._myname == "first" and p1.props.tutorial == 5 then
+								p1:dispatch(UpdateTutorial(6))
+								Knit.GetService("PlayerManagerService"):TutorialEnd()
+							end
+
+							p1:dispatch(UpdateCurrentPixel(p1.state.pixel))
+							p1:dispatch(UpdatePixelOnWorkspaceAction(true))
+							p1:dispatch(UpdateSelectorOpenAction(false))
+							p1:dispatch(UpdateSubMenuOpen(false))
+							p1:dispatch(UpdatePixelPalette({}))
+							Knit.GetService("PixelGeneratorService"):UpdateSelectedPalettePixel(-1)
+							Knit.GetController("GUIController"):UpdateSelectedPalettePixel(-1)
+						end)
+
+						if not ok then
+							print(result)
+						end
+
+						task.wait(1)
+						pcall(function() --[[ Line: 312 | Upvalues: p1 (ref) ]]
+							p1:setState({
+								debounce = false
+							})
+						end)
+					end
+				}, {}),
+				DeclineButton = Roact.createElement(ButtonRed, {
+					AnchorPoint = Vector2.new(1, 1),
+					Size = UDim2.new(0.48, 0, 0.5, 0),
+					Position = UDim2.new(1, 0, 1, 0),
+					AspectRatio = 1.5,
+					RelativeZIndex = Constants.MODAL_RELATIVE_INDEX,
+					Font = Enum.Font.Cartoon,
+					Text = "Close",
+					[Roact.Event.Activated] = function() --[[ Line: 330 | Upvalues: p1 (copy) ]]
+						p1:setState({
+							modalOpen = false,
+							pixel = nil
+						})
+					end
+				}, {}),
+				RebirthButton = Roact.createElement(ButtonBlue, {
+					AnchorPoint = Vector2.new(0, 1),
+					Size = UDim2.new(0.48, 0, 0.5, 0),
+					Position = UDim2.new(0, 0, 1, 0),
+					AspectRatio = 1.5,
+					RelativeZIndex = Constants.MODAL_RELATIVE_INDEX,
+					Font = Enum.Font.Cartoon,
+					Text = "Reset",
+					[Roact.Event.Activated] = function() --[[ Line: 347 | Upvalues: Knit (ref), p1 (copy) ]]
+						Knit.GetService("PixelGeneratorService"):ResetPixelTable(p1.state.category, p1.state.pixel.Name, p1.props.currentPaletteName)
+						p1:setState({
+							modalOpen = false,
+							pixel = nil
+						})
+					end
+				}, {})
+			})
+
+			v6 = "Build"
+			v7 = ""
+			v8 = v12
+			v9 = v13
+			v10 = v11
+		else
+			v3 = Color3.fromRGB(253, 151, 153)
+
+			local v14 = Color3.fromRGB(229, 65, 73)
+
+			v4 = Constants.Icon_Lock
+			v5 = CardRed
+			v7 = p1.state.pixel.PriceText
+
+			local v15 = UDim2.new(0.5, 0, 0, 0)
+			local v16 = Roact.createElement("Frame", {
+				AnchorPoint = Vector2.new(0.5, 1),
+				Position = UDim2.new(0.5, 0, 1, 0),
+				Size = UDim2.new(1, 0, 0.45, 0)
+			}, {
+				AcceptButton = Roact.createElement(ButtonGreen, {
+					AnchorPoint = Vector2.new(0.5, 0),
+					Size = UDim2.new(1, 0, 0.5, 0),
+					Position = UDim2.new(0.5, 0, 0.04, 0),
+					AspectRatio = 3,
+					RelativeZIndex = Constants.MODAL_RELATIVE_INDEX,
+					Font = Enum.Font.Cartoon,
+					Text = "Buy",
+					[Roact.Event.Activated] = function() --[[ Line: 170 | Upvalues: Knit (ref), p1 (copy), UpdateTutorial (ref), UpdateUnlockedPixelsByCategory (ref), RBXWait (ref) ]]
+						if Knit.GetService("PixelGeneratorService"):BuyPixelTable(p1.state.category, p1.state.pixel.Name) then
+							if p1.state.pixel._myname == "first" and p1.props.tutorial == 3 then
+								p1:dispatch(UpdateTutorial(4))
+								p1:setState({
+									modalOpen = false,
+									pixel = nil
+								})
+							end
+
+							p1:dispatch(UpdateUnlockedPixelsByCategory((Knit.GetService("PlayerManagerService"):GetUnlockedPixels(p1.props.selectedCategory))))
+						else
+							if not (DateTime.now().UnixTimestampMillis - p1.state.notEnoughtMoneyTime >= 500) then
+								return
+							end
+
+							local UnixTimestampMillis = DateTime.now().UnixTimestampMillis
+
+							p1:setState({
+								notEnoughtMoney = false
+							})
+							p1:setState({
+								notEnoughtMoney = true,
+								notEnoughtMoneyTime = UnixTimestampMillis
+							})
+							RBXWait(2.5)
+
+							if p1.state.notEnoughtMoneyTime ~= UnixTimestampMillis then
+								return
+							end
+
+							p1:setState({
+								notEnoughtMoney = false
+							})
+						end
+					end
+				}),
+				DeclineButton = Roact.createElement(ButtonRed, {
+					AnchorPoint = Vector2.new(0.5, 1),
+					Size = UDim2.new(0.48, 0, 0.5, 0),
+					Position = UDim2.new(0.5, 0, 1, 0),
+					AspectRatio = 1.5,
+					RelativeZIndex = Constants.MODAL_RELATIVE_INDEX,
+					Font = Enum.Font.Cartoon,
+					Text = "Close",
+					[Roact.Event.Activated] = function() --[[ Line: 214 | Upvalues: p1 (copy) ]]
+						p1:setState({
+							modalOpen = false,
+							pixel = nil,
+							notEnoughtMoney = false
+						})
+					end
+				}, {})
+			})
+
+			v6 = "Unlock"
+			v8 = v15
+			v9 = v16
+			v10 = v14
+		end
+
+		local t2 = {
+			target = Knit.Player.PlayerGui
+		}
+		local t3 = {}
+		local t5 = {}
+		local t6 = {
+			Transparency = 0.5,
+			AnchorPoint = Vector2.new(0.5, 0.5),
+			Size = UDim2.new(1, 0, 1, 0),
+			Position = UDim2.new(0.5, 0, 0.5, 0),
+			BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+		}
+		local t7 = {}
+		local t8 = {
+			ExternalChildren = nil,
+			AnchorPoint = Vector2.new(0.5, 0),
+			Position = UDim2.new(0.5, 0, 0.05, 0),
+			ExternalBackgroundColor3 = v3,
+			TitleABackgroundColor3 = v10,
+			Font = Enum.Font.Cartoon,
+			TitleAImage = v4,
+			TitleAText = v6,
+			TitleATextColor3 = Color3.fromRGB(248, 248, 248),
+			TitleAImageColor3 = Color3.fromRGB(248, 248, 248),
+			RelativeZIndex = Constants.MODAL_RELATIVE_INDEX
+		}
+		local t9 = {}
+		local t10 = {
+			Transparency = 1,
+			AnchorPoint = Vector2.new(0.5, 0),
+			Position = v8,
+			Size = UDim2.new(1, 0, 0.55, 0)
+		}
+		local t11 = {}
+		local t12 = {}
+
+		t12.Image = v1 and ((v1 and p1.props.unlockedPixelsByCategory[p1.state.pixel.Name].Completed or false) and p1.state.pixel.Image or Constants.Icon_Question_W_Border) or Constants.Icon_Lock_W_Border
+		t12.Text = v7
+		t12.Font = Enum.Font.Cartoon
+		t12.RelativeZIndex = Constants.MODAL_RELATIVE_INDEX
+		t11[1] = Roact.createElement(v5, t12, {})
+		t9.Card = Roact.createElement("Frame", t10, t11)
+		t9.Buttons = v9
+
+		local _ = p1.props.tutorial == 3 or p1.props.tutorial == 5
+
+		t9.TutorialArrow = p1.state.pixel._myname == "first" and Roact.createElement("Frame", {
+			Transparency = 1,
+			AnchorPoint = Vector2.new(0.5, 1),
+			Position = UDim2.new(0.5, 0, 1, 0),
+			Size = UDim2.new(1, 0, 0.45, 0)
+		}, { Roact.createElement("ImageLabel", {
+				BackgroundTransparency = 1,
+				Image = "rbxassetid://8094615044",
+				AnchorPoint = Vector2.new(1, 0.5),
+				Size = UDim2.new(0, 200, 0, 100),
+				Position = UDim2.new(0, 0, 0.5, -25),
+				ImageColor3 = Color3.fromRGB(251, 255, 22),
+				ZIndex = Constants.MODAL_RELATIVE_INDEX + 20
+			}, {
+				UIAspectRatioConstraint = Roact.createElement("UIAspectRatioConstraint", {
+					AspectRatio = 2
+				}, {})
+			}) }) or nil
+		t8.InternalChildren = t9
+		t7.V2FrameUI = Roact.createElement(V2FrameUI, t8)
+		t5.ModalFrame = Roact.createElement("Frame", t6, t7)
+		t3.Modal = Roact.createElement("ScreenGui", {
+			IgnoreGuiInset = true
+		}, t5)
+		t.PixelSelectionModal = Roact.createElement(Roact.Portal, t2, t3)
+	end
+
+	local v24 = p1.state.categories[p1.props.selectedCategory]
+	local v25 = #v24
+
+	if not p1.state.scrollFail then
+		local t2 = {}
+
+		t2[1] = table.unpack(p1.state.categories[p1.props.selectedCategory], 1, p1.state.loaded)
+		v24 = t2
+	end
+
+	local v27 = 1
+
+	while v24 ~= nil and next(v24) ~= nil do
+		local v28 = table.move(v24, 1, math.min(4, #v24), 1, {})
+		local t2 = {
+			BackgroundTransparency = 1,
+			Size = UDim2.new(1, 0, 1, 0)
+		}
+
+		if v27 == 1 then
+			t2[Roact.Change.AbsoluteSize] = function(p12) --[[ Line: 461 | Upvalues: v25 (copy), p1 (copy) ]]
+				local AbsoluteSize = p12.AbsoluteSize
+
+				p12.Parent.Parent.CanvasSize = UDim2.new(0, AbsoluteSize.X, 0, AbsoluteSize.Y * math.ceil(v25 / 4))
+				p1:setState({
+					rbx = p12
+				})
+			end
+		end
+
+		local t3 = {
+			UICorner = Roact.createElement("UICorner", {}, {})
+		}
+
+		for i, v in ipairs(v28) do
+			local v30, v31, v32
+			local v33 = if p1.props.unlockedPixelsByCategory[v.Name] then true else false
+
+			if v33 then
+				v30 = p1.props.unlockedPixelsByCategory[v.Name].Completed
+
+				if v30 then
+					v31 = v33
+				else
+					v30 = false
+					v31 = v33
+				end
+			else
+				v30 = false
+				v31 = v33
+			end
+
+			local t4 = {
+				BackgroundTransparency = 1,
+				AnchorPoint = Vector2.new(0, 0),
+				Size = UDim2.new(0.25, 0, 1, 0),
+				Position = UDim2.new((i - 1) * 0.25, 0, 0, 0)
+			}
+			local t5 = {}
+			local t6 = {
+				AnchorPoint = Vector2.new(0.5, 0.5),
+				Size = UDim2.new(0.95, 0, 0.95, 0),
+				Position = UDim2.new(0.5, 0, 0.5, 0),
+				BackgroundTransparency = 1,
+				BorderSizePixel = 0,
+				Custom = {
+					changeX = -3,
+					changeY = -3,
+					MouseButton1DownCustom = function() --[[ MouseButton1DownCustom | Line: 497 | Upvalues: p1 (copy) ]]
+						if p1.state.mousedown then
+							p1:setState({
+								mousedown = false
+							})
+						else
+							p1:setState({
+								mousedown = true
+							})
+						end
+					end
+				},
+				[Roact.Event.Activated] = function() --[[ Line: 510 | Upvalues: p1 (copy), v (copy), i (copy), UpdateTutorial (ref) ]]
+					if not (p1.state.modalOpen and p1.state.pixel) then
+						if p1.state.swiped and p1.state.mousedown then
+							p1:setState({
+								swiped = false,
+								mousedown = false
+							})
+
+							return
+						end
+
+						p1:setState({
+							modalOpen = true,
+							pixel = v,
+							category = p1.props.selectedCategory
+						})
+					end
+
+					if i ~= 1 or v._myname ~= "first" then
+						return
+					end
+
+					if p1.props.tutorial == 2 then
+						p1:dispatch(UpdateTutorial(3))
+					end
+
+					if p1.props.tutorial ~= 4 then
+						return
+					end
+
+					p1:dispatch(UpdateTutorial(5))
+				end
+			}
+			local t7 = {}
+			local t8 = {}
+
+			v32 = v31 and (v30 and v.Image or Constants.Icon_Question_W_Border) or Constants.Icon_Lock_W_Border
+			t8.Image = v32
+			t8.Text = if v31 then "" else v.PriceText
+			t8.Font = Enum.Font.Cartoon
+			t7[v.Name] = Roact.createElement(v31 and CardGreen or CardRed, t8, {})
+			t5.Pixel = Roact.createElement(ShrinkTextButton, t6, t7)
+			t3[i] = Roact.createElement("Frame", t4, t5)
+		end
+
+		t[v27] = Roact.createElement("Frame", t2, {
+			UIAspectRatioConstraint = Roact.createElement("UIAspectRatioConstraint", {
+				AspectRatio = 4.2668
+			}, {}),
+			MainFrame = Roact.createElement("Frame", {
+				BackgroundTransparency = 1,
+				AnchorPoint = Vector2.new(0, 1),
+				Size = UDim2.new(1, 0, 1, 0),
+				Position = UDim2.new(0, 0, 1, 0)
+			}, t3)
+		})
+		v24, v27 = table.move(v24, 5, #v24, 1, {}), v27 + 1
+	end
+
+	t.UIListLayout = Roact.createElement("UIListLayout", {
+		FillDirection = Enum.FillDirection.Vertical,
+		SortOrder = Enum.SortOrder.LayoutOrder,
+		HorizontalAlignment = Enum.HorizontalAlignment.Center
+	})
+	t.NotEnoughtMoney = if p1.state.notEnoughtMoney then Roact.createElement(TemporizedMessage, {
+	Text = "Not enought Money.",
+	TextStrokeTransparency = 1,
+	Font = Enum.Font.Cartoon,
+	TextColor3 = Color3.fromRGB(224, 27, 37),
+	TextStrokeColor3 = Color3.fromRGB(235, 235, 235)
+}) or nil else nil
+
+	return Roact.createElement("ScrollingFrame", {
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Size = UDim2.new(1, 0, 1, 0),
+		BackgroundTransparency = 1,
+		Position = UDim2.new(0.5, 0, 0.5, 0),
+		BorderSizePixel = 0,
+		AutomaticCanvasSize = Enum.AutomaticSize.Y,
+		ElasticBehavior = Enum.ElasticBehavior.Never,
+		ScrollingDirection = Enum.ScrollingDirection.Y,
+		ScrollBarImageColor3 = p1.props.ScrollBarImageColor3,
+		[Roact.Ref] = p1.ScrollingFrameRef
+	}, Roact.createElement("Frame", {
+		BackgroundTransparency = 1,
+		AnchorPoint = Vector2.new(0, 0),
+		Size = UDim2.new(0.95, 0, 1, 0),
+		Position = UDim2.new(0, 0, 0, 0)
+	}, t))
+end
+
+return RoactRodux.connect(function(p1, p2) --[[ Line: 609 ]]
+	return {
+		selectedCategory = p1.DrawSelector.selectedCategory,
+		unlockedPixelsByCategory = p1.DrawSelector.unlockedPixelsByCategory,
+		currentPaletteName = p1.DrawSelector.currentPaletteName,
+		tutorial = p1.MainMenu.Tutorial,
+		isTouch = p1.DrawSelector.isTouch
+	}
+end, function(p1) --[[ Line: 618 ]]
+	return {
+		dispatch = function(p12, p2) --[[ dispatch | Line: 620 | Upvalues: p1 (copy) ]]
+			p1(p2)
+		end
+	}
+end)(v1)

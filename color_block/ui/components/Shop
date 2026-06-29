@@ -1,0 +1,211 @@
+-- https://lua.expert/
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Knit = require(ReplicatedStorage.Knit)
+local Roact = require(ReplicatedStorage.Roact)
+local RoactRodux = require(ReplicatedStorage.RoactRodux)
+local Constants = require(ReplicatedStorage.Constants)
+local ShopButtons = require(script.Parent.ShopButtons)
+local ShopElements = require(script.Parent.ShopElements)
+local ButtonImageGUI = require(script.Parent.ButtonImageGUI)
+local ButtonImageGUISmall = require(script.Parent.ButtonImageGUISmall)
+local H2FrameUI = require(script.Parent.UIComponents.H2FrameUI)
+local ButtonRed = require(script.Parent.UIComponents.ButtonRed)
+local UpdateSubMenuOpen = require(script.Parent.Parent.Actions.MainMenuAction).UpdateSubMenuOpen
+local UpdateSelectorOpenAction = require(script.Parent.Parent.Actions.ShopAction).UpdateSelectorOpenAction
+local UpdateUnlockedShopByCategory = require(script.Parent.Parent.Actions.ShopAction).UpdateUnlockedShopByCategory
+local v1 = Roact.Component:extend("Shop")
+
+function v1.init(p1) --[[ init | Line: 24 ]]
+	p1.dispatch = p1.props.dispatch
+	p1:setState({
+		debounce = false
+	})
+end
+function v1.didMount(p1) --[[ didMount | Line: 31 | Upvalues: Knit (copy), Constants (copy), UpdateUnlockedShopByCategory (copy) ]]
+	Knit.GetController("GUIController"):SubscribeTopic(Constants.UPDATE_UNLOCKED_SHOP .. Knit.Player.UserId, function(...) --[[ Line: 32 | Upvalues: Knit (ref), p1 (copy), UpdateUnlockedShopByCategory (ref) ]]
+		p1:dispatch(UpdateUnlockedShopByCategory((Knit.GetService("PlayerManagerService"):GetUnlockedShop(p1.props.selectedCategory))))
+	end)
+end
+function v1.render(p1) --[[ render | Line: 39 | Upvalues: Roact (copy), H2FrameUI (copy), Constants (copy), ButtonRed (copy), UpdateSelectorOpenAction (copy), UpdateSubMenuOpen (copy), ShopButtons (copy), ShopElements (copy), ButtonImageGUISmall (copy), Knit (copy), ButtonImageGUI (copy) ]]
+	if p1.props.subMenuOpen and not p1.props.selectorOpen then
+		return nil
+	end
+
+	if p1.props.selectorOpen then
+		return Roact.createElement("Frame", {
+			Transparency = 1,
+			AnchorPoint = Vector2.new(0.5, 0.5),
+			Size = UDim2.new(1, 0, 1, 0),
+			Position = UDim2.new(0.5, 0, 0.5, 0)
+		}, {
+			SelectShop = Roact.createElement(H2FrameUI, {
+				TitleAText = "SHOP",
+				TitleBText = "COSMETIC ITEMS",
+				RelativeZIndex = 0,
+				AnchorPoint = Vector2.new(0.5, 0.5),
+				Position = UDim2.new(0.5, 0, 0.5, 0),
+				TitleABackgroundColor3 = Color3.fromRGB(255, 204, 0),
+				ExternalBackgroundColor3 = Color3.fromRGB(255, 221, 85),
+				Font = Enum.Font.Cartoon,
+				TitleAImage = Constants.Icon_Shop,
+				TitleATextColor3 = Color3.fromRGB(248, 248, 248),
+				TitleAImageColor3 = Color3.fromRGB(248, 248, 248),
+				TitleBTextColor3 = Color3.fromRGB(190, 22, 22),
+				ExternalChildren = {
+					CloseButton = Roact.createElement(ButtonRed, {
+						AnchorPoint = Vector2.new(1, 0),
+						Size = UDim2.new(0.05, 0, 1, 0),
+						Position = UDim2.new(0.995, 0, 0.01, 0),
+						AspectRatio = 1,
+						Image = Constants.Icon_X,
+						[Roact.Event.Activated] = function() --[[ Line: 75 | Upvalues: p1 (copy), UpdateSelectorOpenAction (ref), UpdateSubMenuOpen (ref) ]]
+							p1:dispatch(UpdateSelectorOpenAction(false))
+							p1:dispatch(UpdateSubMenuOpen(false))
+						end
+					}, {})
+				},
+				InternalChildren = {
+					Categories = Roact.createElement("Frame", {
+						ZIndex = 1,
+						BackgroundTransparency = 1,
+						AnchorPoint = Vector2.new(0, 0.5),
+						Size = UDim2.new(0.2, 0, 1, 0),
+						Position = UDim2.new(0, 0, 0.5, 0)
+					}, {
+						UICorner = Roact.createElement("UICorner", {}, {}),
+						Cat = Roact.createElement(ShopButtons, {
+							Position = UDim2.new(0.5, 0, 0.5, 0)
+						}, {})
+					}),
+					IFrame = Roact.createElement("Frame", {
+						BackgroundTransparency = 1,
+						AnchorPoint = Vector2.new(0, 0.5),
+						Size = UDim2.new(0.8, 0, 1, 0),
+						Position = UDim2.new(0.2, 0, 0.5, 0)
+					}, {
+						UICorner = Roact.createElement("UICorner", {}, {}),
+						Cat = Roact.createElement(ShopElements, {
+							ScrollBarImageColor3 = Color3.fromRGB(240, 133, 34)
+						}, {})
+					})
+				}
+			})
+		})
+	end
+
+	return Roact.createElement("Frame", {
+		Transparency = 1,
+		AnchorPoint = Vector2.new(0.5, 0.5),
+		Size = UDim2.new(1, 0, 1, 0),
+		Position = UDim2.new(0.5, 0, 0.5, 0)
+	}, {
+		EquipUnequipBrush = Roact.createElement("Frame", {
+			Transparency = 1,
+			AnchorPoint = Vector2.new(0, 0.5),
+			Size = UDim2.new(1, 0, 0.15, 0),
+			Position = UDim2.new(0, 10, 0.5, 0)
+		}, {
+			UIAspectRatioConstraint = Roact.createElement("UIAspectRatioConstraint", {
+				AspectRatio = 1.07
+			}, {}),
+			Roact.createElement(ButtonImageGUISmall, {
+				AnchorPoint = Vector2.new(0.5, 0),
+				Size = UDim2.new(0.77, 0, 0.77, 0),
+				Position = UDim2.new(0.5, 0, 1, 5),
+				Image = "rbxassetid://8629206729",
+				Icon = "rbxassetid://8629179772",
+				ImageColor3 = Color3.fromRGB(226, 2, 255),
+				[Roact.Event.Activated] = function() --[[ Line: 148 | Upvalues: p1 (copy), Knit (ref) ]]
+					if p1.state.debounce ~= false then
+						return
+					end
+
+					p1:setState(function(p1) --[[ Line: 151 ]]
+						return {
+							debounce = true
+						}
+					end)
+
+					local Character = Knit.Player.Character
+
+					if Character and Character:FindFirstChildOfClass("Tool") then
+						Character:WaitForChild("Humanoid", 30):UnequipTools()
+
+						local Backpack = Knit.Player:FindFirstChildOfClass("Backpack")
+
+						for i, v in ipairs(Backpack:GetChildren()) do
+							if v:IsA("Tool") then
+								v:Destroy()
+							end
+						end
+					else
+						local v1 = Knit.GetService("PlayerManagerService"):GetSelectedBrush()
+
+						if Knit.GetService("PlayerManagerService"):UpdateSelectedBrush(v1) then
+							task.wait(0.2)
+
+							local Character2 = Knit.Player.Character
+
+							if Character2 then
+								local Humanoid = Character2:WaitForChild("Humanoid", 30)
+
+								if Humanoid then
+									local Backpack = Knit.Player:FindFirstChildOfClass("Backpack")
+
+									if Backpack then
+										local v2 = Backpack:WaitForChild(v1, 30)
+
+										if v2 then
+											Humanoid:EquipTool(v2)
+
+											if p1.props.selectedPalettePixel == -1 or p1.props.palette[p1.props.selectedPalettePixel] == nil then
+												Knit.GetService("PixelGeneratorService"):UpdateSelectedPalettePixel(1, false, Color3.fromRGB(255, 255, 255))
+											else
+												Knit.GetService("PixelGeneratorService"):UpdateSelectedPalettePixel(p1.props.selectedPalettePixel, false, p1.props.palette[p1.props.selectedPalettePixel])
+											end
+										end
+									end
+								end
+							end
+						end
+					end
+
+					task.wait(0.2)
+					p1:setState(function(p1) --[[ Line: 193 ]]
+						return {
+							debounce = false
+						}
+					end)
+				end
+			}, {})
+		}),
+		List = Roact.createElement(ButtonImageGUI, {
+			TYPE = ButtonImageGUI.TYPES.SHOP,
+			AnchorPoint = Vector2.new(0, 0.5),
+			Size = UDim2.new(1, 0, 0.15, 0),
+			Position = UDim2.new(0, 10, 0.5, 0),
+			Text = "SHOP",
+			Icon = Constants.Icon_Palette,
+			[Roact.Event.Activated] = function() --[[ Line: 211 | Upvalues: p1 (copy), UpdateSelectorOpenAction (ref), UpdateSubMenuOpen (ref) ]]
+				p1:dispatch(UpdateSelectorOpenAction(true))
+				p1:dispatch(UpdateSubMenuOpen(true))
+			end
+		}, {})
+	})
+end
+
+return RoactRodux.connect(function(p1, p2) --[[ Line: 225 ]]
+	return {
+		subMenuOpen = p1.MainMenu.SubMenuOpen,
+		selectorOpen = p1.Shop.selectorOpen,
+		selectedCategory = p1.Shop.selectedCategory,
+		palette = p1.DrawSelector.palette,
+		selectedPalettePixel = p1.DrawSelector.selectedPalettePixel
+	}
+end, function(p1) --[[ Line: 234 ]]
+	return {
+		dispatch = function(p12, p2) --[[ dispatch | Line: 236 | Upvalues: p1 (copy) ]]
+			p1(p2)
+		end
+	}
+end)(v1)

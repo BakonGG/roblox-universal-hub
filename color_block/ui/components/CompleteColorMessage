@@ -1,0 +1,164 @@
+-- https://lua.expert/
+local Knit = require(game:GetService("ReplicatedStorage").Knit)
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Roact = require(ReplicatedStorage.Roact)
+local RoactRodux = require(ReplicatedStorage.RoactRodux)
+local RBXWait = require(game:GetService("ReplicatedStorage").RBXWait)
+local Constants = require(ReplicatedStorage.Constants)
+
+require(script.Parent.UIComponents.V2FrameUI)
+require(script.Parent.UIComponents.CardBlue)
+require(script.Parent.UIComponents.ButtonGreen)
+
+local TemporizedMessage = require(script.Parent.UIComponents.TemporizedMessage)
+local UpdatePaletteComplete = require(script.Parent.Parent.Actions.DrawSelectorAction).UpdatePaletteComplete
+local v1 = Roact.Component:extend("CompleteColorMessage")
+
+function v1.init(p1) --[[ init | Line: 17 | Upvalues: Knit (copy), Constants (copy) ]]
+	p1.dispatch = p1.props.dispatch
+	p1:setState({
+		message = false,
+		paletteIdx = nil
+	})
+	Knit.GetController("GUIController"):SubscribeTopic(Constants.ON_PALETTE_COMPLETE .. Knit.Player.UserId, function(...) --[[ Line: 23 | Upvalues: p1 (copy) ]]
+		p1:OnPaletteComplete(...)
+	end)
+end
+function v1.OnPaletteComplete(p1, p2, p3, p4, p5, p6) --[[ OnPaletteComplete | Line: 26 | Upvalues: Knit (copy), UpdatePaletteComplete (copy), RBXWait (copy) ]]
+	if p6 and not p1.props.isCoopPalette then
+		return
+	end
+
+	if not p6 and p1.props.isCoopPalette then
+		return
+	end
+
+	if p2.UserId == Knit.Player.UserId then
+		p1:dispatch(UpdatePaletteComplete(p3, p4))
+	end
+
+	if p2.UserId ~= Knit.Player.UserId or not p4 then
+		return
+	end
+
+	if p1.props.easyModeOn or (p1.props.selectedPalettePixel == p3 or not p5) then
+		p1:ChangeAutomatically(p3)
+	end
+
+	if not p5 then
+		return
+	end
+
+	if p1.state.message then
+		RBXWait(2.2)
+	end
+
+	p1:setState({
+		message = true,
+		paletteIdx = p3
+	})
+	RBXWait(2)
+	p1:setState({
+		message = false,
+		paletteIdx = nil
+	})
+end
+function v1.render(p1) --[[ render | Line: 59 | Upvalues: Roact (copy), TemporizedMessage (copy) ]]
+	if p1.state.message then
+		return Roact.createElement(TemporizedMessage, {
+			TextStrokeTransparency = 1,
+			Font = Enum.Font.Cartoon,
+			TextColor3 = Color3.fromRGB(44, 165, 68),
+			TextStrokeColor3 = Color3.fromRGB(140, 217, 103),
+			Text = "Color " .. p1.state.paletteIdx .. " Completed!"
+		})
+	end
+
+	return nil
+end
+function v1.ChangeAutomatically(p1, p2) --[[ ChangeAutomatically | Line: 74 | Upvalues: Knit (copy) ]]
+	local count = 0
+
+	for k, v in pairs(p1.props.palette) do
+		count = count + 1
+	end
+
+	if p1.props.reverseThePaletteNumbers then
+		for i = count, 1, -1 do
+			if not p1.props["paletteComplete_" .. i] and i ~= p2 then
+				Knit.GetService("PixelGeneratorService"):UpdateSelectedPalettePixel(i, false, p1.props.palette[i])
+				Knit.GetController("GUIController"):UpdateSelectedPalettePixel(i)
+				Knit.GetController("GUIController"):UpdateTextureTransparencyPalettePixel(i)
+
+				return
+			end
+		end
+	else
+		for j = 1, count do
+			if not p1.props["paletteComplete_" .. j] and j ~= p2 then
+				Knit.GetService("PixelGeneratorService"):UpdateSelectedPalettePixel(j, false, p1.props.palette[j])
+				Knit.GetController("GUIController"):UpdateSelectedPalettePixel(j)
+				Knit.GetController("GUIController"):UpdateTextureTransparencyPalettePixel(j)
+
+				return
+			end
+		end
+	end
+end
+function v1.didUpdate(p1, p2, p3) --[[ didUpdate | Line: 102 ]]
+	if p2.reverseThePaletteNumbers == p1.props.reverseThePaletteNumbers then
+		return
+	end
+
+	task.spawn(function() --[[ Line: 104 | Upvalues: p1 (copy) ]]
+		local _, _2 = pcall(function() --[[ Line: 105 | Upvalues: p1 (ref) ]]
+			p1:ChangeAutomatically()
+		end)
+	end)
+end
+
+return RoactRodux.connect(function(p1, p2) --[[ Line: 113 ]]
+	return {
+		palette = p1.DrawSelector.palette,
+		isCoopPalette = p1.DrawSelector.isCoopPalette,
+		selectedPalettePixel = p1.DrawSelector.selectedPalettePixel,
+		easyModeOn = p1.DrawSelector.easyModeOn,
+		reverseThePaletteNumbers = p1.DrawSelector.reverseThePaletteNumbers,
+		paletteComplete_1 = p1.DrawSelector.paletteComplete_1,
+		paletteComplete_2 = p1.DrawSelector.paletteComplete_2,
+		paletteComplete_3 = p1.DrawSelector.paletteComplete_3,
+		paletteComplete_4 = p1.DrawSelector.paletteComplete_4,
+		paletteComplete_5 = p1.DrawSelector.paletteComplete_5,
+		paletteComplete_6 = p1.DrawSelector.paletteComplete_6,
+		paletteComplete_7 = p1.DrawSelector.paletteComplete_7,
+		paletteComplete_8 = p1.DrawSelector.paletteComplete_8,
+		paletteComplete_9 = p1.DrawSelector.paletteComplete_9,
+		paletteComplete_10 = p1.DrawSelector.paletteComplete_10,
+		paletteComplete_11 = p1.DrawSelector.paletteComplete_11,
+		paletteComplete_12 = p1.DrawSelector.paletteComplete_12,
+		paletteComplete_13 = p1.DrawSelector.paletteComplete_13,
+		paletteComplete_14 = p1.DrawSelector.paletteComplete_14,
+		paletteComplete_15 = p1.DrawSelector.paletteComplete_15,
+		paletteComplete_16 = p1.DrawSelector.paletteComplete_16,
+		paletteComplete_17 = p1.DrawSelector.paletteComplete_17,
+		paletteComplete_18 = p1.DrawSelector.paletteComplete_18,
+		paletteComplete_19 = p1.DrawSelector.paletteComplete_19,
+		paletteComplete_20 = p1.DrawSelector.paletteComplete_20,
+		paletteComplete_21 = p1.DrawSelector.paletteComplete_21,
+		paletteComplete_22 = p1.DrawSelector.paletteComplete_22,
+		paletteComplete_23 = p1.DrawSelector.paletteComplete_23,
+		paletteComplete_24 = p1.DrawSelector.paletteComplete_24,
+		paletteComplete_25 = p1.DrawSelector.paletteComplete_25,
+		paletteComplete_26 = p1.DrawSelector.paletteComplete_26,
+		paletteComplete_27 = p1.DrawSelector.paletteComplete_27,
+		paletteComplete_28 = p1.DrawSelector.paletteComplete_28,
+		paletteComplete_29 = p1.DrawSelector.paletteComplete_29,
+		paletteComplete_30 = p1.DrawSelector.paletteComplete_30
+	}
+end, function(p1) --[[ Line: 152 ]]
+	return {
+		dispatch = function(p12, p2) --[[ dispatch | Line: 154 | Upvalues: p1 (copy) ]]
+			p1(p2)
+		end
+	}
+end)(v1)
