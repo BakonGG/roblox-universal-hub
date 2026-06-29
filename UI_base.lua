@@ -1,12 +1,12 @@
 local omni = loadstring(game:HttpGet("https://raw.githubusercontent.com/TweedLeak-LeakScripts/FriseX/main/UI-Library"))()
 
 local UI = omni.new({
-    Name = "🔮 Frise X v1.1.2 🔮";
-    Credit = "Created by Frise X";
+    Name = "Bakon's Script";
+    Credit = "Created by Bakon";
     Color = Color3.fromRGB(122,28,187);
     Bind = "LeftControl";
     UseLoader = false;
-    FullName = "Frise X v1.1.2";
+    FullName = "Bakon's Script";
     CheckKey = function(inputtedKey)
         return inputtedKey=="123"
     end;

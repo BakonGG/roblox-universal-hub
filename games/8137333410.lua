@@ -132,21 +132,7 @@ local function BuyAndEquipNextDraw()
                 if isUnlocked then
                     print("[AutoFarm] Tentando EQUIPAR (Draw) desenho: " .. tostring(draw.Name))
                     
-                    -- Quebra a parede antiga de paleta se houver (visual)
-                    pcall(function()
-                        local plot = GetOwnerPlot()
-                        if plot then
-                            local DrawFolder = plot:FindFirstChild("Draw")
-                            if DrawFolder then
-                                for _, v3 in ipairs(DrawFolder:GetChildren()) do
-                                    if v3.Name == "GivePaletteWall" then
-                                        v3.Parent = nil
-                                        v3:Destroy()
-                                    end
-                                end
-                            end
-                        end
-                    end)
+                    local oldDrawFolder = plot and plot:FindFirstChild("Draw")
                     
                     -- Equipa e gera a arte
                     local sEquip, resEquip = pcall(function()
@@ -155,7 +141,26 @@ local function BuyAndEquipNextDraw()
                     end)
                     
                     if sEquip and resEquip ~= false then
-                        print("[AutoFarm] Chamada de Equipar foi executada com sucesso! Aguardando o servidor trocar o canvas.")
+                        print("[AutoFarm] Chamada de Equipar executada! Aguardando novo canvas...")
+                        
+                        -- ESPERA ATIVA PELO CANVAS
+                        local timeout = tick() + 15
+                        while tick() < timeout do
+                            task.wait(0.5)
+                            local p = GetOwnerPlot()
+                            if p then
+                                local newDrawFolder = p:FindFirstChild("Draw")
+                                -- Se a pasta mudou (o servidor apagou a antiga e criou a nova)
+                                if newDrawFolder and newDrawFolder ~= oldDrawFolder then
+                                    local unp, pro, tot = GetPixelStats(p)
+                                    if tot > 0 then
+                                        break
+                                    end
+                                end
+                            end
+                        end
+                        
+                        print("[AutoFarm] Novo canvas carregado com sucesso!")
                         return true -- Para aqui, pois já encontrou e equipou o próximo!
                     else
                         warn("[AutoFarm] ERRO ao tentar equipar/gerar arte:", tostring(resEquip))
@@ -194,10 +199,8 @@ task.spawn(function()
                 if getgenv().AutoBuyNext or getgenv().AutoFarmMaster then
                     print("[AutoFarm] Tela em branco ou Desenho totalmente finalizado! Buscando o próximo...")
                     local success = BuyAndEquipNextDraw()
-                    if success then
-                        task.wait(3) -- Tempo para o servidor spawnar as peças
-                    else
-                        task.wait(10) -- Espera 10s se falhou (pra não floodar o console se estiver sem dinheiro)
+                    if not success then
+                        task.wait(10) -- Espera 10s se falhou (pra não floodar o console se estiver sem dinheiro/terminado tudo)
                     end
                 else
                     task.wait(1)
@@ -342,3 +345,70 @@ InfoSection:CreateInteractable({
     Warning = "Acompanhe o progresso da pintura pressionando F9 (Console) para ver os logs detalhados do Autofarm.";
     WarningIcon = 11453115091;
 })
+
+---------------------------------------------------------
+-- BOTÃO DE TOGGLE & INTERCEPTAÇÃO DO "X"
+---------------------------------------------------------
+local ToggleGui = Instance.new("ScreenGui")
+ToggleGui.Name = "BakonToggleGui"
+ToggleGui.ResetOnSpawn = false
+local sGui = pcall(function() ToggleGui.Parent = CoreGui end)
+if not sGui then ToggleGui.Parent = Players.LocalPlayer:WaitForChild("PlayerGui") end
+
+local OpenBtn = Instance.new("ImageButton")
+OpenBtn.Size = UDim2.new(0, 40, 0, 40)
+OpenBtn.Position = UDim2.new(0, 5, 0, 45) -- Embaixo do ícone do Roblox
+OpenBtn.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
+OpenBtn.Image = "rbxassetid://6026568240" -- Icone estilo Menu/Settings
+OpenBtn.Parent = ToggleGui
+local UICorner = Instance.new("UICorner")
+UICorner.CornerRadius = UDim.new(0, 8)
+UICorner.Parent = OpenBtn
+
+OpenBtn.MouseButton1Click:Connect(function()
+    for _, gui in pairs(CoreGui:GetChildren()) do
+        if gui:IsA("ScreenGui") then
+            -- Verifica se é a UI do Bakon
+            for _, desc in pairs(gui:GetDescendants()) do
+                if desc:IsA("TextLabel") and desc.Text == "Bakon's Scripts v1.0" then
+                    gui.Enabled = not gui.Enabled
+                    break
+                end
+            end
+        end
+    end
+end)
+
+-- Tentar interceptar o botão X (Close) da UI para não destruir, apenas ocultar
+task.spawn(function()
+    task.wait(2) -- Aguarda a UI terminar de carregar
+    for _, gui in pairs(CoreGui:GetChildren()) do
+        if gui:IsA("ScreenGui") then
+            local isBakon = false
+            for _, desc in pairs(gui:GetDescendants()) do
+                if desc:IsA("TextLabel") and desc.Text == "Bakon's Scripts v1.0" then
+                    isBakon = true
+                    break
+                end
+            end
+            
+            if isBakon then
+                -- Procura o botão X (Close)
+                for _, btn in pairs(gui:GetDescendants()) do
+                    if btn:IsA("TextButton") and (btn.Text == "X" or btn.Text == "x") then
+                        -- Clona o botão para remover os scripts originais (que destroem a GUI)
+                        local newBtn = btn:Clone()
+                        newBtn.Parent = btn.Parent
+                        btn:Destroy()
+                        
+                        -- Adiciona nossa própria conexão para apenas ocultar (Enabled = false)
+                        newBtn.MouseButton1Click:Connect(function()
+                            gui.Enabled = false
+                        end)
+                        break
+                    end
+                end
+            end
+        end
+    end
+end)
