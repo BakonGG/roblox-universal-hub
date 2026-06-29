@@ -212,7 +212,8 @@ task.spawn(function()
                     task.wait(0.5)
                 else
                     -- Pinta os pixels usando Batch
-                    local s = SpeedSettings[getgenv().PaintSpeedMode]
+                    local speedIndex = math.clamp(math.floor(tonumber(getgenv().PaintSpeedMode) or 2), 1, 4)
+                    local s = SpeedSettings[speedIndex]
                     local batchLimit = s.batchSize
                     local waitTime = s.waitTime
                     
