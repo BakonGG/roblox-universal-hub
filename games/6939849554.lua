@@ -205,22 +205,8 @@ local function GetButtonPrice(head)
                 end
             end
         end
-        
-        -- 2. Fallback: Procura por qualquer TextLabel com número solto na NameGui
-        local txtLabel = nameGui:FindFirstChildOfClass("TextLabel")
-        if txtLabel then
-            local p = ParsePrice(txtLabel.Text)
-            if p > 0 then return p end
-        end
-        
-        for _, desc in pairs(nameGui:GetDescendants()) do
-            if desc:IsA("TextLabel") then
-                local p = ParsePrice(desc.Text)
-                if p > 0 then return p end
-            end
-        end
     end
-    return 0 -- Retorna 0 se não encontrar (pode ser um botão grátis)
+    return 0 -- Retorna 0 se não encontrar (provavelmente é botão de Robux sem valor)
 end
 
 getgenv().TotalSpent = getgenv().TotalSpent or 0
