@@ -337,14 +337,11 @@ Section2:CreateSlider({
 
 local InfoSection = Pages:CreateSection("Informação")
 
-InfoSection:CreateInteractable({
-    Name = "O painel visual de progresso";
-    ActionText = "foi removido";
+InfoSection:CreateButton({
+    Name = "Aviso: Acompanhe o progresso no F9 (Console)";
     Callback = function()
         -- Nada
     end;
-    Warning = "Acompanhe o progresso da pintura pressionando F9 (Console) para ver os logs detalhados do Autofarm.";
-    WarningIcon = 11453115091;
 })
 
 ---------------------------------------------------------
