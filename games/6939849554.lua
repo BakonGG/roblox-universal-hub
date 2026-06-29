@@ -171,10 +171,14 @@ local function GetPlayerMoney()
                 local cashFolder = leftFrame:FindFirstChild("Cash")
                 if cashFolder then
                     local cashLbl = cashFolder:FindFirstChild("Cash")
-                    if cashLbl and (cashLbl:IsA("TextLabel") or cashLbl:IsA("TextBox")) then
-                        return ParsePrice(cashLbl.Text)
-                    elseif cashFolder:IsA("TextLabel") or cashFolder:IsA("TextBox") then
-                        return ParsePrice(cashFolder.Text)
+                    if cashLbl and cashLbl:IsA("TextLabel") then
+                        -- Remove TUDO (pontos, virgulas, letras, espaços, etc)
+                        local clean = string.gsub(cashLbl.Text, "[,%.%s%$]", "")
+                        -- Se sobrou só letras (como "Cash"), o match vai ajudar
+                        local digits = string.match(clean, "%d+")
+                        if digits then
+                            return tonumber(digits)
+                        end
                     end
                 end
             end
