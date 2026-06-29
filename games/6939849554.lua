@@ -150,20 +150,69 @@ local function ParsePrice(text)
     return 0
 end
 
+local function FormatNumber(n)
+    n = tostring(n)
+    local k
+    while true do
+        n, k = string.gsub(n, "^(-?%d+)(%d%d%d)", '%1.%2')
+        if k == 0 then break end
+    end
+    return n
+end
+
 local function GetPlayerMoney()
-    local leaderstats = LocalPlayer:FindFirstChild("leaderstats")
-    if leaderstats then
-        for _, v in pairs(leaderstats:GetChildren()) do
-            if v:IsA("IntValue") or v:IsA("NumberValue") then
-                return v.Value -- Pega o primeiro status (geralmente é o dinheiro)
+    local pg = LocalPlayer:FindFirstChild("PlayerGui")
+    if pg then
+        local main = pg:FindFirstChild("Main")
+        if main then
+            local leftFrame = main:FindFirstChild("LeftFrame")
+            if leftFrame then
+                local cashFolder = leftFrame:FindFirstChild("Cash")
+                if cashFolder then
+                    local cashLbl = cashFolder:FindFirstChild("Cash")
+                    if cashLbl and cashLbl:IsA("TextLabel") then
+                        -- Limpa tudo que não for número (Remove espaços, $, pontos, vírgulas)
+                        local clean = string.gsub(cashLbl.Text, "[,%.%s%$]", "")
+                        return tonumber(clean) or 0
+                    end
+                end
             end
         end
     end
     return 0
 end
 
+local function GetButtonPrice(head)
+    local nameGui = head:FindFirstChild("NameGui")
+    if nameGui then
+        local full = nameGui:FindFirstChild("Full")
+        if full then
+            local mainCur = full:FindFirstChild("MainCurrency")
+            if mainCur then
+                local cash = mainCur:FindFirstChild("Cash")
+                if cash then
+                    if cash:IsA("TextLabel") then
+                        local clean = string.gsub(cash.Text, "[,%.%s%$]", "")
+                        return tonumber(clean)
+                    elseif cash:IsA("IntValue") or cash:IsA("NumberValue") then
+                        return cash.Value
+                    elseif cash:IsA("StringValue") then
+                        local clean = string.gsub(cash.Value, "[,%.%s%$]", "")
+                        return tonumber(clean)
+                    end
+                end
+            end
+        end
+    end
+    return nil
+end
+
+getgenv().TotalSpent = getgenv().TotalSpent or 0
+getgenv().KnownButtons = getgenv().KnownButtons or {}
+
 local function AutoBuyTycoon(tycoon)
-    if not tycoon then return end
+    if not tycoon then return nil end
+    local cheapest = math.huge
     
     pcall(function()
         local factory = tycoon:FindFirstChild("Factory")
@@ -174,43 +223,44 @@ local function AutoBuyTycoon(tycoon)
         if not char or not char:FindFirstChild("HumanoidRootPart") then return end
         local hrp = char.HumanoidRootPart
         
-        -- Varre todas as coisas pra comprar na fábrica
+        -- Verificar botões comprados para somar no TotalSpent
+        for item, price in pairs(getgenv().KnownButtons) do
+            if typeof(item) == "Instance" and item.Parent == nil then
+                getgenv().TotalSpent = getgenv().TotalSpent + price
+                getgenv().KnownButtons[item] = nil
+            end
+        end
+        
         for _, item in pairs(factory:GetChildren()) do
             if item:IsA("Model") or item:IsA("Folder") then
                 local head = item:FindFirstChild("Head")
                 if head and head:IsA("BasePart") then
                     
-                    -- REGRA 1: Ignorar itens de Robux (tem Coin_effect)
                     if not head:FindFirstChild("Coin_effect") then
+                        local price = GetButtonPrice(head) or 0
                         
-                        -- Pega o preço da NameGui
-                        local price = 0
-                        local nameGui = head:FindFirstChild("NameGui")
-                        if nameGui then
-                            local textLabel = nameGui:FindFirstChildOfClass("TextLabel")
-                            if textLabel then
-                                price = ParsePrice(textLabel.Text)
-                            end
+                        -- Registrar na tabela de conhecidos para calcular gasto
+                        if price > 0 and not getgenv().KnownButtons[item] then
+                            getgenv().KnownButtons[item] = price
                         end
                         
-                        -- REGRA 2: Só compra se tivermos dinheiro suficiente
-                        if myMoney >= price then
-                            -- Tenta pisar no botão
+                        if price > 0 and price < cheapest then
+                            cheapest = price
+                        end
+                        
+                        if myMoney >= price and price > 0 then
                             firetouchinterest(hrp, head, 0)
                             firetouchinterest(hrp, head, 1)
                             
-                            -- Se tiver ClickDetector, tenta clicar
                             local cd = head:FindFirstChildOfClass("ClickDetector")
-                            if cd then
-                                fireclickdetector(cd)
-                            end
+                            if cd then fireclickdetector(cd) end
                         end
                     end
-                    
                 end
             end
         end
     end)
+    return cheapest
 end
 
 ---------------------------------------------------------
@@ -233,19 +283,27 @@ task.spawn(function()
             end
         end
         
+        local cheapest = math.huge
         if getgenv().AutoBuy then
             if myTycoon then
-                AutoBuyTycoon(myTycoon)
+                cheapest = AutoBuyTycoon(myTycoon) or math.huge
             end
         end
         
-        -- Atualizar a UI com o nome do Tycoon
+        -- Format strings for UI
         local nameStr = myTycoon and ("Tycoon: " .. myTycoon.Name) or "Tycoon: Nenhum (Procurando...)"
+        local moneyStr = "Dinheiro: " .. FormatNumber(GetPlayerMoney())
+        local spentStr = "Total Gasto: " .. FormatNumber(getgenv().TotalSpent or 0)
+        local nextStr = "Próximo Botão: " .. (cheapest == math.huge and "Nenhum" or FormatNumber(cheapest))
+        
         for _, gui in pairs(CoreGui:GetChildren()) do
             if gui:IsA("ScreenGui") then
                 for _, desc in pairs(gui:GetDescendants()) do
-                    if desc:IsA("TextLabel") and desc.Text:match("^Tycoon:") then
-                        desc.Text = nameStr
+                    if desc:IsA("TextLabel") then
+                        if desc.Text:match("^Tycoon:") then desc.Text = nameStr end
+                        if desc.Text:match("^Dinheiro:") then desc.Text = moneyStr end
+                        if desc.Text:match("^Total Gasto:") then desc.Text = spentStr end
+                        if desc.Text:match("^Próximo Botão:") then desc.Text = nextStr end
                     end
                 end
             end
@@ -294,8 +352,22 @@ Section:CreateToggle({
 
 Section:CreateButton({
     Name = "Tycoon: Procurando...";
-    Callback = function()
-    end;
+    Callback = function() end;
+})
+
+Section:CreateButton({
+    Name = "Dinheiro: 0";
+    Callback = function() end;
+})
+
+Section:CreateButton({
+    Name = "Total Gasto: 0";
+    Callback = function() end;
+})
+
+Section:CreateButton({
+    Name = "Próximo Botão: Procurando...";
+    Callback = function() end;
 })
 
 ---------------------------------------------------------
