@@ -216,55 +216,58 @@ local function AutoBuyTycoon(tycoon)
     if not tycoon then return nil end
     local cheapest = math.huge
     
-    pcall(function()
-        local factory = tycoon:FindFirstChild("Factory")
-        if not factory then return end
-        
-        local myMoney = GetPlayerMoney()
-        local char = LocalPlayer.Character
-        if not char or not char:FindFirstChild("HumanoidRootPart") then return end
-        local hrp = char.HumanoidRootPart
-        
-        -- Verificar botões comprados para somar no TotalSpent
-        for item, price in pairs(getgenv().KnownButtons) do
-            if typeof(item) == "Instance" and item.Parent == nil then
-                getgenv().TotalSpent = getgenv().TotalSpent + price
-                getgenv().KnownButtons[item] = nil
-            end
+    local factory = tycoon:FindFirstChild("Factory")
+    if not factory then return end
+    
+    local myMoney = GetPlayerMoney()
+    local char = LocalPlayer.Character
+    if not char or not char:FindFirstChild("HumanoidRootPart") then return end
+    local hrp = char.HumanoidRootPart
+    
+    -- Verificar botões comprados para somar no TotalSpent
+    for item, price in pairs(getgenv().KnownButtons) do
+        if typeof(item) == "Instance" and item.Parent == nil then
+            getgenv().TotalSpent = getgenv().TotalSpent + price
+            getgenv().KnownButtons[item] = nil
         end
-        
-        for _, item in pairs(factory:GetChildren()) do
-            if item:IsA("Model") or item:IsA("Folder") then
-                local head = item:FindFirstChild("Head")
-                if head and head:IsA("BasePart") then
+    end
+    
+    for _, item in pairs(factory:GetChildren()) do
+        if item:IsA("Model") or item:IsA("Folder") then
+            local head = item:FindFirstChild("Head")
+            if head and head:IsA("BasePart") then
+                
+                if not head:FindFirstChild("Coin_effect") then
+                    local price = GetButtonPrice(head)
                     
-                    if not head:FindFirstChild("Coin_effect") then
-                        local price = GetButtonPrice(head)
-                        
-                        -- Registrar na tabela de conhecidos para calcular gasto
-                        if price > 0 and not getgenv().KnownButtons[item] then
-                            getgenv().KnownButtons[item] = price
-                        end
-                        
-                        if price > 0 and price < cheapest then
-                            cheapest = price
-                            getgenv().NextButtonHead = head
-                        end
-                        
-                        if myMoney >= price and price > 0 then
-                            print("[AutoFarm] Tentando comprar:", item.Name, "| Preço:", price, "| Meu Dinheiro:", myMoney)
+                    if price > 0 and not getgenv().KnownButtons[item] then
+                        getgenv().KnownButtons[item] = price
+                    end
+                    
+                    if price > 0 and price < cheapest then
+                        cheapest = price
+                        getgenv().NextButtonHead = head
+                    end
+                    
+                    if price > 0 then
+                        print(string.format("[AutoFarm] Botão: %s | Preço: %s | Meu Dinheiro: %s", item.Name, tostring(price), tostring(myMoney)))
+                        if myMoney >= price then
+                            print("   -> Tem dinheiro suficiente, tentando pisar!")
                             firetouchinterest(hrp, head, 0)
                             task.wait(0.05)
                             firetouchinterest(hrp, head, 1)
                             
                             local cd = head:FindFirstChildOfClass("ClickDetector")
                             if cd then fireclickdetector(cd) end
+                        else
+                            print("   -> Dinheiro insuficiente.")
                         end
                     end
                 end
             end
         end
-    end)
+    end
+    
     return cheapest
 end
 
