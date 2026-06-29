@@ -114,8 +114,6 @@ local function CollectCash(tycoon)
         
         if not touched then
             warn("[AutoFarm] Nenhuma BasePart ou ClickDetector encontrada dentro de Collect!")
-        else
-            print("[AutoFarm] Coleta realizada com sucesso no tycoon: " .. tycoon.Name)
         end
     end)
     
@@ -203,14 +201,9 @@ local function GetButtonPrice(head)
             if mainCur then
                 local cash = mainCur:FindFirstChild("Cash")
                 if cash then
-                    if cash:IsA("TextLabel") then
-                        local clean = string.gsub(cash.Text, "[,%.%s%$]", "")
-                        local num = tonumber(clean)
-                        if num then return num end
-                    elseif cash:IsA("IntValue") or cash:IsA("NumberValue") then
-                        return cash.Value
-                    elseif cash:IsA("StringValue") then
-                        local clean = string.gsub(cash.Value, "[,%.%s%$]", "")
+                    local valueLbl = cash:FindFirstChild("Value")
+                    if valueLbl and valueLbl:IsA("TextLabel") then
+                        local clean = string.gsub(valueLbl.Text, "[,%.%s%$]", "")
                         local num = tonumber(clean)
                         if num then return num end
                     end
