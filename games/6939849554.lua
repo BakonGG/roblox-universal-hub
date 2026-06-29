@@ -126,9 +126,9 @@ end
 -- AUTO BUY LOGIC
 ---------------------------------------------------------
 local function ParsePrice(text)
-    -- Remove vírgulas
-    local cleanText = string.gsub(text, ",", "")
-    -- Procura por números seguidos de K, M, B, etc.
+    -- Remove vírgulas, $ e espaços, MAS MANTÉM O PONTO DECIMAL
+    local cleanText = string.gsub(text, "[%$%s,]", "")
+    -- Procura por números (com ou sem ponto) seguidos de K, M, B, etc.
     local val, suffix = string.match(cleanText, "([%d%.]+)([KkMmBbtT]?)")
     if val then
         local price = tonumber(val)
@@ -139,11 +139,11 @@ local function ParsePrice(text)
             elseif suf == "B" then price = price * 1000000000
             elseif suf == "T" then price = price * 1000000000000
             end
-            return price
+            return math.floor(price)
         end
     end
-    -- Fallback genérico para pegar qualquer número
-    local numStr = string.match(text, "%d+")
+    -- Fallback genérico
+    local numStr = string.match(cleanText, "%d+")
     if numStr then return tonumber(numStr) end
     return 0
 end
@@ -169,10 +169,7 @@ local function GetPlayerMoney()
                 if cashFolder then
                     local cashLbl = cashFolder:FindFirstChild("Cash")
                     if cashLbl and cashLbl:IsA("TextLabel") then
-                        -- Limpa tudo que não for número (Remove espaços, $, pontos, vírgulas)
-                        local clean = string.gsub(cashLbl.Text, "[,%.%s%$]", "")
-                        local num = tonumber(clean)
-                        if num then return num end
+                        return ParsePrice(cashLbl.Text)
                     end
                 end
             end
@@ -203,9 +200,7 @@ local function GetButtonPrice(head)
                 if cash then
                     local valueLbl = cash:FindFirstChild("Value")
                     if valueLbl and valueLbl:IsA("TextLabel") then
-                        local clean = string.gsub(valueLbl.Text, "[,%.%s%$]", "")
-                        local num = tonumber(clean)
-                        if num then return num end
+                        return ParsePrice(valueLbl.Text)
                     end
                 end
             end
@@ -267,6 +262,7 @@ local function AutoBuyTycoon(tycoon)
                         
                         if price >= 0 and price < cheapest then
                             cheapest = price
+                            getgenv().NextButtonHead = head
                         end
                         
                         if myMoney >= price then
@@ -388,7 +384,15 @@ Section:CreateButton({
 
 Section:CreateButton({
     Name = "Próximo Botão: Procurando...";
-    Callback = function() end;
+    Callback = function()
+        local h = getgenv().NextButtonHead
+        if h and h.Parent then
+            local char = LocalPlayer.Character
+            if char and char:FindFirstChild("HumanoidRootPart") then
+                char.HumanoidRootPart.CFrame = CFrame.new(h.Position + Vector3.new(0, 3, 0))
+            end
+        end
+    end;
 })
 
 ---------------------------------------------------------
