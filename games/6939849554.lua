@@ -260,12 +260,12 @@ local function AutoBuyTycoon(tycoon)
                             getgenv().KnownButtons[item] = price
                         end
                         
-                        if price >= 0 and price < cheapest then
+                        if price > 0 and price < cheapest then
                             cheapest = price
                             getgenv().NextButtonHead = head
                         end
                         
-                        if myMoney >= price then
+                        if myMoney >= price and price > 0 then
                             firetouchinterest(hrp, head, 0)
                             firetouchinterest(hrp, head, 1)
                             
