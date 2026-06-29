@@ -68,8 +68,8 @@ local function CollectCash(tycoon)
         local cashToCollect = ground:FindFirstChild("Cash to collect")
         if not cashToCollect then warn("[AutoFarm] 'Cash to collect' não encontrado em Ground") return end
         
-        local collectFolder = cashToCollect:FindFirstChild("Collect")
-        if not collectFolder then warn("[AutoFarm] 'Collect' não encontrado em Cash to collect") return end
+        local collectPart = cashToCollect:FindFirstChild("Collect")
+        if not collectPart then warn("[AutoFarm] 'Collect' não encontrado em Cash to collect") return end
         
         local char = LocalPlayer.Character
         if not char or not char:FindFirstChild("HumanoidRootPart") then 
@@ -79,8 +79,16 @@ local function CollectCash(tycoon)
         local hrp = char.HumanoidRootPart
         
         local touched = false
-        -- Busca genérica: Toca em todas as Parts (pois o Cash tem TouchInterest) e ativa ClickDetectors
-        for _, v in pairs(collectFolder:GetDescendants()) do
+        
+        -- O grande segredo: O 'Collect' na verdade É UMA PEÇA (BasePart), e não uma pasta!
+        if collectPart:IsA("BasePart") then
+            firetouchinterest(hrp, collectPart, 0)
+            firetouchinterest(hrp, collectPart, 1)
+            touched = true
+        end
+        
+        -- Busca genérica de garantia para os filhos
+        for _, v in pairs(collectPart:GetDescendants()) do
             if v:IsA("BasePart") then
                 firetouchinterest(hrp, v, 0)
                 firetouchinterest(hrp, v, 1)
