@@ -126,6 +126,9 @@ end
 -- AUTO BUY LOGIC
 ---------------------------------------------------------
 local function ParsePrice(text)
+    -- Remove tags de formatação como <font color="#000"> e <b>
+    text = string.gsub(text, "<[^>]+>", "")
+    
     -- Remove vírgulas, $ e espaços, MAS MANTÉM O PONTO DECIMAL
     local cleanText = string.gsub(text, "[%$%s,]", "")
     -- Procura por números (com ou sem ponto) seguidos de K, M, B, etc.
@@ -168,17 +171,26 @@ local function GetPlayerMoney()
                 local cashFolder = leftFrame:FindFirstChild("Cash")
                 if cashFolder then
                     local cashLbl = cashFolder:FindFirstChild("Cash")
-                    if cashLbl and cashLbl:IsA("TextLabel") then
+                    if cashLbl and (cashLbl:IsA("TextLabel") or cashLbl:IsA("TextBox")) then
                         return ParsePrice(cashLbl.Text)
+                    elseif cashFolder:IsA("TextLabel") or cashFolder:IsA("TextBox") then
+                        return ParsePrice(cashFolder.Text)
                     end
                 end
             end
         end
     end
     
-    -- Fallback: Tenta achar na leaderstats
+    -- Fallback: Tenta achar na leaderstats pelo nome exato primeiro
     local leaderstats = LocalPlayer:FindFirstChild("leaderstats")
     if leaderstats then
+        for _, name in ipairs({"Cash", "Money", "Coins", "Tokens", "CartCoins"}) do
+            local val = leaderstats:FindFirstChild(name)
+            if val and (val:IsA("IntValue") or val:IsA("NumberValue")) then
+                return val.Value
+            end
+        end
+        -- Se não achar por nome, pega a primeira que ver
         for _, v in pairs(leaderstats:GetChildren()) do
             if v:IsA("IntValue") or v:IsA("NumberValue") then
                 return v.Value
