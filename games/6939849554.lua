@@ -173,9 +173,20 @@ local function GetPlayerMoney()
                     if cashLbl and cashLbl:IsA("TextLabel") then
                         -- Limpa tudo que não for número (Remove espaços, $, pontos, vírgulas)
                         local clean = string.gsub(cashLbl.Text, "[,%.%s%$]", "")
-                        return tonumber(clean) or 0
+                        local num = tonumber(clean)
+                        if num then return num end
                     end
                 end
+            end
+        end
+    end
+    
+    -- Fallback: Tenta achar na leaderstats
+    local leaderstats = LocalPlayer:FindFirstChild("leaderstats")
+    if leaderstats then
+        for _, v in pairs(leaderstats:GetChildren()) do
+            if v:IsA("IntValue") or v:IsA("NumberValue") then
+                return v.Value
             end
         end
     end
@@ -185,6 +196,7 @@ end
 local function GetButtonPrice(head)
     local nameGui = head:FindFirstChild("NameGui")
     if nameGui then
+        -- 1. Caminho exato que o usuário mandou
         local full = nameGui:FindFirstChild("Full")
         if full then
             local mainCur = full:FindFirstChild("MainCurrency")
@@ -193,18 +205,34 @@ local function GetButtonPrice(head)
                 if cash then
                     if cash:IsA("TextLabel") then
                         local clean = string.gsub(cash.Text, "[,%.%s%$]", "")
-                        return tonumber(clean)
+                        local num = tonumber(clean)
+                        if num then return num end
                     elseif cash:IsA("IntValue") or cash:IsA("NumberValue") then
                         return cash.Value
                     elseif cash:IsA("StringValue") then
                         local clean = string.gsub(cash.Value, "[,%.%s%$]", "")
-                        return tonumber(clean)
+                        local num = tonumber(clean)
+                        if num then return num end
                     end
                 end
             end
         end
+        
+        -- 2. Fallback: Procura por qualquer TextLabel com número solto na NameGui
+        local txtLabel = nameGui:FindFirstChildOfClass("TextLabel")
+        if txtLabel then
+            local p = ParsePrice(txtLabel.Text)
+            if p > 0 then return p end
+        end
+        
+        for _, desc in pairs(nameGui:GetDescendants()) do
+            if desc:IsA("TextLabel") then
+                local p = ParsePrice(desc.Text)
+                if p > 0 then return p end
+            end
+        end
     end
-    return nil
+    return 0 -- Retorna 0 se não encontrar (pode ser um botão grátis)
 end
 
 getgenv().TotalSpent = getgenv().TotalSpent or 0
@@ -237,18 +265,18 @@ local function AutoBuyTycoon(tycoon)
                 if head and head:IsA("BasePart") then
                     
                     if not head:FindFirstChild("Coin_effect") then
-                        local price = GetButtonPrice(head) or 0
+                        local price = GetButtonPrice(head)
                         
                         -- Registrar na tabela de conhecidos para calcular gasto
                         if price > 0 and not getgenv().KnownButtons[item] then
                             getgenv().KnownButtons[item] = price
                         end
                         
-                        if price > 0 and price < cheapest then
+                        if price >= 0 and price < cheapest then
                             cheapest = price
                         end
                         
-                        if myMoney >= price and price > 0 then
+                        if myMoney >= price then
                             firetouchinterest(hrp, head, 0)
                             firetouchinterest(hrp, head, 1)
                             
