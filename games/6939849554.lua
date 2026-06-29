@@ -288,6 +288,48 @@ local function AutoBuyTycoon(tycoon)
 end
 
 ---------------------------------------------------------
+-- AUTO OBBY LOGIC
+---------------------------------------------------------
+local function DoAutoObby()
+    local char = LocalPlayer.Character
+    if not char or not char:FindFirstChild("HumanoidRootPart") then return end
+    local hrp = char.HumanoidRootPart
+    
+    pcall(function()
+        local caveObby = workspace:FindFirstChild("Cave obby")
+        if not caveObby then return end
+        
+        -- Primeira recompensa (30.000 cash giver)
+        local inside = caveObby:FindFirstChild("Inside")
+        if inside then
+            local func = inside:FindFirstChild("Functional")
+            if func then
+                local cashGiver30k = func:FindFirstChild("30.000 cash giver")
+                if cashGiver30k then
+                    local part = cashGiver30k:FindFirstChild("Cash giver")
+                    if part and part:IsA("BasePart") then
+                        firetouchinterest(hrp, part, 0)
+                        task.wait(0.05)
+                        firetouchinterest(hrp, part, 1)
+                    end
+                end
+            end
+        end
+        
+        -- Segunda recompensa (Cave Cash giver)
+        local cave = caveObby:FindFirstChild("Cave")
+        if cave then
+            local part = cave:FindFirstChild("Cash giver")
+            if part and part:IsA("BasePart") then
+                firetouchinterest(hrp, part, 0)
+                task.wait(0.05)
+                firetouchinterest(hrp, part, 1)
+            end
+        end
+    end)
+end
+
+---------------------------------------------------------
 -- LOOP PRINCIPAL DE AUTO FARM
 ---------------------------------------------------------
 task.spawn(function()
@@ -298,6 +340,10 @@ task.spawn(function()
         end
         
         local myTycoon = GetMyTycoon()
+        
+        if getgenv().AutoObby then
+            DoAutoObby()
+        end
         
         if getgenv().AutoCollectCash then
             if myTycoon then
@@ -371,6 +417,15 @@ Section:CreateToggle({
     Default = false;
     Callback = function(state)
         getgenv().AutoBuy = state
+    end;
+})
+
+Section:CreateToggle({
+    Name = "Auto Obby (Cave)";
+    Flag = "ToggleAutoObby";
+    Default = false;
+    Callback = function(state)
+        getgenv().AutoObby = state
     end;
 })
 
