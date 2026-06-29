@@ -252,7 +252,9 @@ local function AutoBuyTycoon(tycoon)
                         end
                         
                         if myMoney >= price and price > 0 then
+                            print("[AutoFarm] Tentando comprar:", item.Name, "| Preço:", price, "| Meu Dinheiro:", myMoney)
                             firetouchinterest(hrp, head, 0)
+                            task.wait(0.05)
                             firetouchinterest(hrp, head, 1)
                             
                             local cd = head:FindFirstChildOfClass("ClickDetector")
