@@ -125,6 +125,95 @@ local function CollectCash(tycoon)
 end
 
 ---------------------------------------------------------
+-- AUTO BUY LOGIC
+---------------------------------------------------------
+local function ParsePrice(text)
+    -- Remove vírgulas
+    local cleanText = string.gsub(text, ",", "")
+    -- Procura por números seguidos de K, M, B, etc.
+    local val, suffix = string.match(cleanText, "([%d%.]+)([KkMmBbtT]?)")
+    if val then
+        local price = tonumber(val)
+        if price then
+            local suf = string.upper(suffix)
+            if suf == "K" then price = price * 1000
+            elseif suf == "M" then price = price * 1000000
+            elseif suf == "B" then price = price * 1000000000
+            elseif suf == "T" then price = price * 1000000000000
+            end
+            return price
+        end
+    end
+    -- Fallback genérico para pegar qualquer número
+    local numStr = string.match(text, "%d+")
+    if numStr then return tonumber(numStr) end
+    return 0
+end
+
+local function GetPlayerMoney()
+    local leaderstats = LocalPlayer:FindFirstChild("leaderstats")
+    if leaderstats then
+        for _, v in pairs(leaderstats:GetChildren()) do
+            if v:IsA("IntValue") or v:IsA("NumberValue") then
+                return v.Value -- Pega o primeiro status (geralmente é o dinheiro)
+            end
+        end
+    end
+    return 0
+end
+
+local function AutoBuyTycoon(tycoon)
+    if not tycoon then return end
+    
+    pcall(function()
+        local factory = tycoon:FindFirstChild("Factory")
+        if not factory then return end
+        
+        local myMoney = GetPlayerMoney()
+        local char = LocalPlayer.Character
+        if not char or not char:FindFirstChild("HumanoidRootPart") then return end
+        local hrp = char.HumanoidRootPart
+        
+        -- Varre todas as coisas pra comprar na fábrica
+        for _, item in pairs(factory:GetChildren()) do
+            if item:IsA("Model") or item:IsA("Folder") then
+                local head = item:FindFirstChild("Head")
+                if head and head:IsA("BasePart") then
+                    
+                    -- REGRA 1: Ignorar itens de Robux (tem Coin_effect)
+                    if not head:FindFirstChild("Coin_effect") then
+                        
+                        -- Pega o preço da NameGui
+                        local price = 0
+                        local nameGui = head:FindFirstChild("NameGui")
+                        if nameGui then
+                            local textLabel = nameGui:FindFirstChildOfClass("TextLabel")
+                            if textLabel then
+                                price = ParsePrice(textLabel.Text)
+                            end
+                        end
+                        
+                        -- REGRA 2: Só compra se tivermos dinheiro suficiente
+                        if myMoney >= price then
+                            -- Tenta pisar no botão
+                            firetouchinterest(hrp, head, 0)
+                            firetouchinterest(hrp, head, 1)
+                            
+                            -- Se tiver ClickDetector, tenta clicar
+                            local cd = head:FindFirstChildOfClass("ClickDetector")
+                            if cd then
+                                fireclickdetector(cd)
+                            end
+                        end
+                    end
+                    
+                end
+            end
+        end
+    end)
+end
+
+---------------------------------------------------------
 -- LOOP PRINCIPAL DE AUTO FARM
 ---------------------------------------------------------
 task.spawn(function()
@@ -141,6 +230,12 @@ task.spawn(function()
                 CollectCash(myTycoon)
             else
                 warn("[AutoFarm] Tycoon do jogador não encontrado! Verifique se a placa tem seu nome.")
+            end
+        end
+        
+        if getgenv().AutoBuy then
+            if myTycoon then
+                AutoBuyTycoon(myTycoon)
             end
         end
         
@@ -185,6 +280,15 @@ Section:CreateToggle({
     Default = false;
     Callback = function(state)
         getgenv().AutoCollectCash = state
+    end;
+})
+
+Section:CreateToggle({
+    Name = "Auto Buy (Botões)";
+    Flag = "ToggleAutoBuy";
+    Default = false;
+    Callback = function(state)
+        getgenv().AutoBuy = state
     end;
 })
 
