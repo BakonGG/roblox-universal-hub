@@ -37,16 +37,14 @@ getgenv().AutoCollectCash = false
 
 -- Função robusta para encontrar o Tycoon do jogador
 local function GetMyTycoon()
-    local expectedText = LocalPlayer.Name .. "'s Tycoon"
+    local expected1 = LocalPlayer.Name .. "'s Tycoon"
+    local expected2 = LocalPlayer.DisplayName .. "'s Tycoon"
     
-    -- Varre o workspace procurando pastas/modelos com "Tycoon" no nome
+    -- Varre o workspace procurando pastas/modelos
     for _, child in pairs(workspace:GetChildren()) do
-        if string.find(child.Name, "Tycoon") then
-            -- Procura por TextLabels dentro desse Tycoon
-            for _, desc in pairs(child:GetDescendants()) do
-                if desc:IsA("TextLabel") and desc.Text == expectedText then
-                    return child -- Retorna o modelo do Tycoon inteiro (ex: workspace.TycoonC)
-                end
+        for _, desc in pairs(child:GetDescendants()) do
+            if desc:IsA("TextLabel") and (desc.Text == expected1 or desc.Text == expected2) then
+                return child -- Retorna o modelo do Tycoon inteiro
             end
         end
     end
@@ -55,38 +53,55 @@ end
 
 -- Função para coletar o dinheiro
 local function CollectCash(tycoon)
-    if not tycoon then return end
+    if not tycoon then 
+        warn("[AutoFarm] ERRO: Tycoon não definido na função CollectCash.")
+        return 
+    end
     
-    pcall(function()
+    local success, err = pcall(function()
         local factory = tycoon:FindFirstChild("Factory")
-        if factory then
-            local ground = factory:FindFirstChild("Ground")
-            if ground then
-                local cashToCollect = ground:FindFirstChild("Cash to collect")
-                if cashToCollect then
-                    local collectFolder = cashToCollect:FindFirstChild("Collect")
-                    if collectFolder then
-                        local char = LocalPlayer.Character
-                        if char and char:FindFirstChild("HumanoidRootPart") then
-                            local hrp = char.HumanoidRootPart
-                            
-                            -- Busca genérica: Toca em todas as Parts (pois o Cash tem TouchInterest) e ativa ClickDetectors
-                            for _, v in pairs(collectFolder:GetDescendants()) do
-                                if v:IsA("BasePart") then
-                                    firetouchinterest(hrp, v, 0)
-                                    firetouchinterest(hrp, v, 1)
-                                end
-                                if v:IsA("ClickDetector") then
-                                    fireclickdetector(v)
-                                end
-                            end
-                        end
-                        
-                    end
-                end
+        if not factory then warn("[AutoFarm] 'Factory' não encontrado em: " .. tycoon.Name) return end
+        
+        local ground = factory:FindFirstChild("Ground")
+        if not ground then warn("[AutoFarm] 'Ground' não encontrado em Factory") return end
+        
+        local cashToCollect = ground:FindFirstChild("Cash to collect")
+        if not cashToCollect then warn("[AutoFarm] 'Cash to collect' não encontrado em Ground") return end
+        
+        local collectFolder = cashToCollect:FindFirstChild("Collect")
+        if not collectFolder then warn("[AutoFarm] 'Collect' não encontrado em Cash to collect") return end
+        
+        local char = LocalPlayer.Character
+        if not char or not char:FindFirstChild("HumanoidRootPart") then 
+            warn("[AutoFarm] Personagem ou HumanoidRootPart não encontrado")
+            return 
+        end
+        local hrp = char.HumanoidRootPart
+        
+        local touched = false
+        -- Busca genérica: Toca em todas as Parts (pois o Cash tem TouchInterest) e ativa ClickDetectors
+        for _, v in pairs(collectFolder:GetDescendants()) do
+            if v:IsA("BasePart") then
+                firetouchinterest(hrp, v, 0)
+                firetouchinterest(hrp, v, 1)
+                touched = true
+            end
+            if v:IsA("ClickDetector") then
+                fireclickdetector(v)
+                touched = true
             end
         end
+        
+        if not touched then
+            warn("[AutoFarm] Nenhuma BasePart ou ClickDetector encontrada dentro de Collect!")
+        else
+            print("[AutoFarm] Coleta realizada com sucesso no tycoon: " .. tycoon.Name)
+        end
     end)
+    
+    if not success then
+        warn("[AutoFarm] ERRO CRÍTICO no CollectCash: " .. tostring(err))
+    end
 end
 
 ---------------------------------------------------------
@@ -99,12 +114,25 @@ task.spawn(function()
             break
         end
         
+        local myTycoon = GetMyTycoon()
+        
         if getgenv().AutoCollectCash then
-            local myTycoon = GetMyTycoon()
             if myTycoon then
                 CollectCash(myTycoon)
             else
-                --print("[AutoFarm] Não encontrei o Tycoon de", LocalPlayer.Name)
+                warn("[AutoFarm] Tycoon do jogador não encontrado! Verifique se a placa tem seu nome.")
+            end
+        end
+        
+        -- Atualizar a UI com o nome do Tycoon
+        local nameStr = myTycoon and ("Tycoon: " .. myTycoon.Name) or "Tycoon: Nenhum (Procurando...)"
+        for _, gui in pairs(CoreGui:GetChildren()) do
+            if gui:IsA("ScreenGui") then
+                for _, desc in pairs(gui:GetDescendants()) do
+                    if desc:IsA("TextLabel") and desc.Text:match("^Tycoon:") then
+                        desc.Text = nameStr
+                    end
+                end
             end
         end
     end
@@ -141,7 +169,7 @@ Section:CreateToggle({
 })
 
 Section:CreateButton({
-    Name = "Mais funções em breve...";
+    Name = "Tycoon: Procurando...";
     Callback = function()
     end;
 })
