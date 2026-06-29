@@ -37,14 +37,26 @@ getgenv().AutoCollectCash = false
 
 -- Função robusta para encontrar o Tycoon do jogador
 local function GetMyTycoon()
-    local expected1 = LocalPlayer.Name .. "'s Tycoon"
-    local expected2 = LocalPlayer.DisplayName .. "'s Tycoon"
+    local nameLower = string.lower(LocalPlayer.Name)
+    local displayLower = string.lower(LocalPlayer.DisplayName)
     
-    -- Varre o workspace procurando pastas/modelos
+    -- Varre o workspace procurando pastas/modelos que sejam Tycoons
     for _, child in pairs(workspace:GetChildren()) do
-        for _, desc in pairs(child:GetDescendants()) do
-            if desc:IsA("TextLabel") and (desc.Text == expected1 or desc.Text == expected2) then
-                return child -- Retorna o modelo do Tycoon inteiro
+        if string.find(child.Name, "Tycoon") then
+            -- 1. Verifica se existe um ObjectValue chamado Owner
+            local ownerVal = child:FindFirstChild("Owner")
+            if ownerVal and ownerVal:IsA("ObjectValue") and ownerVal.Value == LocalPlayer then
+                return child
+            end
+            
+            -- 2. Busca por placas de texto com o nome do jogador (ignorando maiúsculas/minúsculas)
+            for _, desc in pairs(child:GetDescendants()) do
+                if desc:IsA("TextLabel") and desc.Text ~= "" then
+                    local txt = string.lower(desc.Text)
+                    if string.find(txt, nameLower) or string.find(txt, displayLower) then
+                        return child -- Retorna o modelo do Tycoon inteiro
+                    end
+                end
             end
         end
     end
